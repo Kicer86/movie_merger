@@ -48,6 +48,6 @@ foreach(resolution ${resolutions})
 endforeach()
 
 
-add_custom_target(makeVideos
+add_custom_target(makeVideos ALL
     DEPENDS ${testVideos}
 )
