@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.20)
 
 find_program(ffmpeg ffmpeg REQUIRED)
 find_program(avidemux avidemux3_cli REQUIRED)
+find_program(python python REQUIRED)
+
 
 set(testVideos)
 set(horizontalVideos "Atoms - 8579.mp4" "Frog - 113403.mp4" "Grass - 66810.mp4" "sea-waves-crashing-on-beach-shore-4793288.mp4" "Woman - 58142.mp4")
@@ -50,4 +52,14 @@ endforeach()
 
 add_custom_target(makeVideos ALL
     DEPENDS ${testVideos}
+)
+
+
+enable_testing()
+add_test(
+    NAME same_videos_diff_fps
+    COMMAND ${python}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/same_videos_different_fps.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/vof.py
+            ${CMAKE_CURRENT_BINARY_DIR}/test-videos
 )
