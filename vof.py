@@ -9,7 +9,7 @@ import tempfile
 
 def process_video(path: str, wd: str) -> dict:
     os.makedirs(name = wd)
-    process = subprocess.Popen(["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-filter:v", "select=gt(scene\,0.4),showinfo",
+    process = subprocess.Popen(["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-filter:v", "select=gt(scene\,0.3),showinfo",
                                "-fps_mode", "passthrough", wd + "/%05d.jpg"],
                               stderr=subprocess.PIPE)
 
