@@ -17,6 +17,8 @@ video_pairs=[("movie-2160p.mp4", "movie-360p.mp4"),
              ("movie-720p-ntsc_film_fps.mp4", "movie-720p-120_fps.mp4"),
              ("movie-720p-film_fps.mp4", "movie-720p-20_fps.mp4")]
 
+passes = 0
+
 for (video1, video2) in video_pairs:
 
     video1_path = test_videos_dir + "/" + video1
@@ -33,10 +35,42 @@ for (video1, video2) in video_pairs:
     output = json.loads(status.stdout)
 
     # verify overlapping regions
-    video1_len = video_probing.length(video1_path)
-    video2_len = video_probing.length(video2_path)
+    if not "segments" in output:
+        print("Segments were expected")
+        exit(1)
 
-    print(f"video 1 length: {video1_len}")
-    print(f"video 2 length: {video2_len}")
+    segments = output["segments"]
 
-    #print(output)
+    if len(segments) != 1:
+        print("1 segment was expected")
+        exit(1)
+
+    segment_scope = segments[0]
+
+    try:
+        video1_segment_details = segment_scope.get(video1_path)
+        video2_segment_details = segment_scope.get(video2_path)
+
+        video1_segment_begin = video1_segment_details.get("begin")
+        video2_segment_begin = video2_segment_details.get("begin")
+        video1_segment_end = video1_segment_details.get("end")
+        video2_segment_end = video2_segment_details.get("end")
+
+        video1_len = video_probing.length(video1_path)
+        video2_len = video_probing.length(video2_path)
+
+        if video1_segment_begin != 0.0 or video1_segment_end != video1_len or video2_segment_begin != 0.0 or video2_segment_end != video2_len:
+            print("Videos are not overlapped in the expected way")
+            exit(1)
+
+        passes = passes + 1
+
+    except:
+        print("No valid segments data")
+        exit(1)
+
+if passes == 4:
+    print("All cases passed")
+else:
+    print("Some tests failed")
+    exit(1)
