@@ -15,6 +15,7 @@ file2 = sys.argv[2]
 temp_location = tempfile.gettempdir() + "/VOF/" + str(os.getpid()) + "/"
 os.makedirs(name = temp_location)
 
+#filters to be consedered: atadenoise,hue=s=0,scdet=s=1:t=10
 subprocess.run(["ffmpeg", "-i", file1, "-filter:v", "select=gt(scene\,0.4),showinfo", "-fps_mode",
                 "passthrough", temp_location + "lhs%05d.jpg"])
 subprocess.run(["ffmpeg", "-i", file2, "-filter:v", "select=gt(scene\,0.4),showinfo", "-fps_mode",
