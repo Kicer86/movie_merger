@@ -78,10 +78,12 @@ if len(video1_scenes) == len(video2_scenes):
     video2_segment["begin"] = 0.0
     video2_segment["end"] = video_probing.length(video2)
 
-    segments = [
-        {video1: video1_segment},
-        {video2: video2_segment}
-    ]
+    segment_scope = {
+        video1: video1_segment,
+        video2: video2_segment
+    }
+
+    segments = [segment_scope]
 
     output["segments"] = segments
 
