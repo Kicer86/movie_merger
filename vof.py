@@ -1,4 +1,5 @@
 
+import json
 import os
 import re
 import sys
@@ -84,5 +85,5 @@ if len(video1_scenes) == len(video2_scenes):
 
     output["segments"] = segments
 
-print(output)
+print(json.dumps(output))
 shutil.rmtree(temp_location)
