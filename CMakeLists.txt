@@ -49,12 +49,12 @@ foreach(resolution ${resolutions})
 
     # for 720p generate movies with various fps
     if(resolution EQUAL 720)
-        set(fpsSet 120;60;30;29.97;25;20)
+        set(fpsSet 120;60;30;ntsc;ntsc_film;pal;film;20)
         foreach(fps ${fpsSet})
-            set(movieFpsFileName movie-${resolution}p-${fps}fps.mp4)
+            set(movieFpsFileName movie-${resolution}p-${fps}_fps.mp4)
             add_custom_command(
                 OUTPUT test-videos/${movieFpsFileName}
-                COMMAND ${ffmpeg} -y -i test-videos/movie-${resolution}p.mp4 -filter:v fps=${fps} test-videos/${movieFpsFileName}
+                COMMAND ${ffmpeg} -y -i test-videos/movie-${resolution}p.mp4 -filter:v fps=fps=${fps} test-videos/${movieFpsFileName}
                 DEPENDS test-videos/movie-${resolution}p.mp4
             )
             list(APPEND testVideos test-videos/${movieFpsFileName})
