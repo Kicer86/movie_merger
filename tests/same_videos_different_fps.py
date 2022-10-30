@@ -69,7 +69,7 @@ for (video1, video2) in video_pairs:
         print("No valid segments data")
         exit(1)
 
-if passes == 4:
+if passes == len(video_pairs):
     print("All cases passed")
 else:
     print("Some tests failed")
