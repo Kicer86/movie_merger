@@ -1,21 +1,13 @@
 
+import sys
+sys.path.append("..")
+
 import json
 import subprocess
 import sys
 
+import video_probing
 
-def video_length(path: str) -> float:
-    status = subprocess.run(["ffprobe",
-                             "-v",
-                             "error",
-                             "-show_entries",
-                             "format=duration",
-                             "-of",
-                             "default=noprint_wrappers=1:nokey=1",
-                             path],
-                            capture_output=True)
-    length = float(status.stdout)
-    return length
 
 vof_script = sys.argv[1]
 test_videos_dir = sys.argv[2]
@@ -41,8 +33,8 @@ for (video1, video2) in video_pairs:
     output = json.loads(status.stdout)
 
     # verify overlapping regions
-    video1_len = video_length(video1_path)
-    video2_len = video_length(video2_path)
+    video1_len = video_probing.length(video1_path)
+    video2_len = video_probing.length(video2_path)
 
     print(f"video 1 length: {video1_len}")
     print(f"video 2 length: {video2_len}")
