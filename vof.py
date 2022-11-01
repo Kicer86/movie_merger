@@ -10,6 +10,7 @@ import shutil
 import tempfile
 
 import video_probing
+import vof_algo
 
 
 def process_video(path: str, wd: str) -> []:
@@ -51,19 +52,6 @@ def generate_hashes(scenes_location: str) -> []:
         hashes[scene_no] = img_hash
 
     return hashes
-
-
-def match_frames(video1_hashes: [], video2_hashes: []) -> []:
-    # O^2 solution, but maybe it will do
-    matches = []
-
-    for i in range(len(video1_hashes)):
-        for j in range(len(video2_hashes)):
-            if np.array_equal(video1_hashes[i], video2_hashes[j]):
-                matches.append((i, j))
-                break
-
-    return matches
 
 
 def adjust_videos(video1_scenes, video2_scenes) -> {}:
@@ -133,7 +121,7 @@ else:
         video2_hashes = generate_hashes(video2_scenes_location)
 
         # find corresponding scenes
-        matching_frames = match_frames(video1_hashes, video2_hashes)
+        matching_frames = vof_algo.match_frames(video1_hashes, video2_hashes)
 
         if len(matching_frames) > 1:
             video1_frames_with_match = []

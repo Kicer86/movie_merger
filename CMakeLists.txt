@@ -98,6 +98,12 @@ add_custom_target(makeVideos ALL
 
 enable_testing()
 
+add_test(
+    NAME vof_algo
+    COMMAND ${python}
+            ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_tests.py
+)
+
 if(OFF)
     add_test(
         NAME same_videos_diff_fps
@@ -115,4 +121,3 @@ if(OFF)
                 ${CMAKE_CURRENT_BINARY_DIR}/test-videos
     )
 endif()
-
