@@ -99,9 +99,16 @@ add_custom_target(makeVideos ALL
 enable_testing()
 
 add_test(
-    NAME vof_algo
+    NAME vof_algo_match_frames
     COMMAND ${python}
             ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_match_frames_tests.py
+)
+
+
+add_test(
+    NAME vof_algo_adjust_videos
+    COMMAND ${python}
+            ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_adjust_videos_tests.py
 )
 
 if(OFF)

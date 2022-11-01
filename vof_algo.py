@@ -46,6 +46,5 @@ def adjust_videos(video1_scenes: [], video2_scenes: [],
 
     segments = [segment_scope]
 
-    output = dict()
-    output["segments"] = segments
+    output = {"segments": segments}
     return output
