@@ -97,18 +97,22 @@ add_custom_target(makeVideos ALL
 
 
 enable_testing()
-add_test(
-    NAME same_videos_diff_fps
-    COMMAND ${python}
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/same_videos_different_fps.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/vof.py
-            ${CMAKE_CURRENT_BINARY_DIR}/test-videos
-)
 
-add_test(
-    NAME videos_w_and_wo_intro
-    COMMAND ${python}
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/videos_w_and_wo_intro.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/vof.py
-            ${CMAKE_CURRENT_BINARY_DIR}/test-videos
-)
+if(OFF)
+    add_test(
+        NAME same_videos_diff_fps
+        COMMAND ${python}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/same_videos_different_fps.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/vof.py
+                ${CMAKE_CURRENT_BINARY_DIR}/test-videos
+    )
+
+    add_test(
+        NAME videos_w_and_wo_intro
+        COMMAND ${python}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/videos_w_and_wo_intro.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/vof.py
+                ${CMAKE_CURRENT_BINARY_DIR}/test-videos
+    )
+endif()
+
