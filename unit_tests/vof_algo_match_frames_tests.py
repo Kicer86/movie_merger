@@ -23,7 +23,7 @@ class TestVOFAlgorithms(unittest.TestCase):
         video1_scenes = [scene1, scene3, scene4, scene5, scene6]
         video2_scenes = [scene1, scene2, scene3, scene4, scene6, scene7]
 
-        matches = vof_algo.match_frames(video1_scenes, video2_scenes)
+        matches = vof_algo.match_frames(video1_scenes, video2_scenes, lambda l, r: np.array_equal(l, r))
 
         expected_matches = [(0, 0), (1, 2), (2, 3), (4, 4)]
 

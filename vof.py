@@ -47,7 +47,7 @@ def generate_hashes(scenes_location: str) -> []:
     for image_path in images:
         image = cv.imread(image_path)
         img_hash = cv.img_hash.blockMeanHash(image)
-        #img_hash = int.from_bytes(img_hash_raw.tobytes(), byteorder='big', signed=False)
+        # img_hash = int.from_bytes(img_hash_raw.tobytes(), byteorder='big', signed=False)
         scene_no = int(os.path.splitext(os.path.basename(image_path))[0]) - 1   # count from zero
         hashes[scene_no] = img_hash
 
@@ -79,31 +79,25 @@ else:
     video2_len = video_probing.length(video2)
 
     # perform matching
-    if len(video1_scenes) == len(video2_scenes):
-        # Count of scene changes match, try to map them
-        output = vof_algo.adjust_videos(video1_scenes, video2_scenes,
+    video1_hashes = generate_hashes(video1_scenes_location)
+    video2_hashes = generate_hashes(video2_scenes_location)
+
+    # find corresponding scenes
+    hash_algo = cv.img_hash.BlockMeanHash().create()
+    matching_frames = vof_algo.match_frames(video1_hashes, video2_hashes,
+                                            lambda l, r: hash_algo.compare(l, r) < 10)
+
+    if len(matching_frames) > 1:
+        video1_frames_with_match = []
+        video2_frames_with_match = []
+
+        for (match1, match2) in matching_frames:
+            video1_frames_with_match.append(video1_scenes[match1])
+            video2_frames_with_match.append(video2_scenes[match2])
+
+        output = vof_algo.adjust_videos(video1_frames_with_match, video2_frames_with_match,
                                         video1_fps, video2_fps,
                                         video1_len, video2_len)
-
-    else:
-        # calculate img hash for all detected scene changes
-        video1_hashes = generate_hashes(video1_scenes_location)
-        video2_hashes = generate_hashes(video2_scenes_location)
-
-        # find corresponding scenes
-        matching_frames = vof_algo.match_frames(video1_hashes, video2_hashes)
-
-        if len(matching_frames) > 1:
-            video1_frames_with_match = []
-            video2_frames_with_match = []
-
-            for (match1, match2) in matching_frames:
-                video1_frames_with_match.append(video1_scenes[match1])
-                video2_frames_with_match.append(video2_scenes[match2])
-
-            output = vof_algo.adjust_videos(video1_frames_with_match, video2_frames_with_match,
-                                            video1_fps, video2_fps,
-                                            video1_len, video2_len)
 
     shutil.rmtree(temp_location)
 
