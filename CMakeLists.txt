@@ -101,7 +101,7 @@ enable_testing()
 add_test(
     NAME vof_algo
     COMMAND ${python}
-            ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_tests.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_match_frames_tests.py
 )
 
 if(OFF)
