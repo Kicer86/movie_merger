@@ -104,11 +104,16 @@ add_test(
             ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_match_frames_tests.py
 )
 
-
 add_test(
     NAME vof_algo_adjust_videos
     COMMAND ${python}
             ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/vof_algo_adjust_videos_tests.py
+)
+
+add_test(
+    NAME vof_ut_utils
+    COMMAND ${python}
+            ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/utils_tests.py
 )
 
 if(OFF)
