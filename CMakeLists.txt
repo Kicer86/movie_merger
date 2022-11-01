@@ -9,7 +9,15 @@ find_program(python python REQUIRED)
 
 
 set(testVideos)
-set(horizontalVideos "Atoms - 8579.mp4" "Frog - 113403.mp4" "Grass - 66810.mp4" "sea-waves-crashing-on-beach-shore-4793288.mp4" "Woman - 58142.mp4")
+set(horizontalVideos
+    "Atoms - 8579.mp4"
+    "Frog - 113403.mp4"
+    "Grass - 66810.mp4"
+    "sea-waves-crashing-on-beach-shore-4793288.mp4"
+    "Woman - 58142.mp4"
+    "Blue_Sky_and_Clouds_Timelapse_0892__Videvo.mov"
+)
+
 set(resolutions 2160;1080;720;360)
 
 # convert all horizontal movies into 4 different resolutions
@@ -18,33 +26,36 @@ foreach(resolution ${resolutions})
     set(segments)
     foreach(videoFile ${horizontalVideos})
         get_filename_component(videoName ${videoFile} NAME_WE)
-        set(movieFpsFileName "${videoName}-${resolution}p.mp4")
+        set(videoFpsFileName "${videoName}-${resolution}p.mp4")
         add_custom_command(
-            OUTPUT test-videos/${movieFpsFileName}
-            COMMAND ${ffmpeg} -y -i ${CMAKE_CURRENT_SOURCE_DIR}/VOF-media/${videoFile} -filter:v scale=-1:${resolution} test-videos/${movieFpsFileName}
+            OUTPUT test-videos/${videoFpsFileName}
+            COMMAND ${ffmpeg} -y -i ${CMAKE_CURRENT_SOURCE_DIR}/VOF-media/${videoFile} -filter:v scale=-1:${resolution} test-videos/${videoFpsFileName}
         )
-        list(APPEND segments test-videos/${movieFpsFileName})
-        set_source_files_properties(test-videos/${movieFpsFileName} PROPERTIES GENERATED TRUE)
+        list(APPEND segments test-videos/${videoFpsFileName})
+        set_source_files_properties(test-videos/${videoFpsFileName} PROPERTIES GENERATED TRUE)
     endforeach()
 
-    # combine horizontal files into movies combining all of them (per resolution)
+    # combine horizontal files (but Blue Sky) into movies combining all of them (per resolution)
     set(inputFiles)
     set(first TRUE)
     foreach(videoFile ${segments})
-        if(first)
-            set(inputFiles ${inputFiles} --load ${videoFile})
-        else()
-            set(inputFiles ${inputFiles} --append ${videoFile})
+        # do not include Blue Sky video in movie, it will be used in movie with intro file
+        if(NOT videoFile MATCHES "^test-videos/Blue_Sky_and_Clouds_Timelapse.*")
+            if(first)
+                set(inputFiles ${inputFiles} --load ${videoFile})
+            else()
+                set(inputFiles ${inputFiles} --append ${videoFile})
+            endif()
+            set(first FALSE)
         endif()
-        set(first FALSE)
     endforeach()
 
     set(movieFileName movie-${resolution}p.mp4)
     add_custom_command(
-            OUTPUT test-videos/${movieFileName}
-            COMMAND ${avidemux} ${inputFiles} --video-codec Copy --save test-videos/${movieFileName}
-            DEPENDS ${segments}
-        )
+        OUTPUT test-videos/${movieFileName}
+        COMMAND ${avidemux} ${inputFiles} --video-codec Copy --save test-videos/${movieFileName}
+        DEPENDS ${segments}
+    )
     list(APPEND testVideos test-videos/${movieFileName})
 
     # for 720p generate movies with various fps
@@ -58,8 +69,24 @@ foreach(resolution ${resolutions})
                 DEPENDS test-videos/movie-${resolution}p.mp4
             )
             list(APPEND testVideos test-videos/${movieFpsFileName})
+            set_source_files_properties(test-videos/${movieFpsFileName} PROPERTIES GENERATED TRUE)
         endforeach()
     endif()
+
+    # movies with intro
+    set(movieWithIntroFileName movie-${resolution}p-w-intro.mp4)
+    add_custom_command(
+        OUTPUT test-videos/${movieWithIntroFileName}
+        COMMAND ${avidemux}
+            --load test-videos/Blue_Sky_and_Clouds_Timelapse_0892__Videvo-${resolution}p.mp4
+            --append test-videos/movie-${resolution}p.mp4
+            --video-codec Copy
+            --save test-videos/${movieWithIntroFileName}
+        DEPENDS
+            test-videos/Blue_Sky_and_Clouds_Timelapse_0892__Videvo-${resolution}p.mp4
+            test-videos/movie-${resolution}p.mp4
+    )
+    list(APPEND testVideos test-videos/${movieWithIntroFileName})
 
 endforeach()
 
