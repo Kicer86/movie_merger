@@ -1,5 +1,7 @@
 
+import cv2 as cv
 import json
+import numpy as np
 import os
 import re
 import sys
@@ -36,23 +38,35 @@ def process_video(path: str, wd: str) -> []:
     return result
 
 
-if len(sys.argv) != 3:
-    print(f"python {sys.argv[0]} video1 video2")
-    exit(1)
+def generate_hashes(scenes_location: str) -> []:
+    images = [os.path.join(scenes_location, img) for img in os.listdir(scenes_location)
+              if os.path.isfile(os.path.join(scenes_location, img))]
 
-video1 = sys.argv[1]
-video2 = sys.argv[2]
+    hashes = [None for i in range(len(images))]
+    for image_path in images:
+        image = cv.imread(image_path)
+        img_hash = cv.img_hash.blockMeanHash(image)
+        #img_hash = int.from_bytes(img_hash_raw.tobytes(), byteorder='big', signed=False)
+        scene_no = int(os.path.splitext(os.path.basename(image_path))[0]) - 1   # count from zero
+        hashes[scene_no] = img_hash
 
-temp_location = tempfile.gettempdir() + "/VOF/" + str(os.getpid()) + "/"
+    return hashes
 
-# filters to be consedered: atadenoise,hue=s=0,scdet=s=1:t=10
-video1_scenes = process_video(video1, temp_location + "1")
-video2_scenes = process_video(video2, temp_location + "2")
 
-output = {}
-# perform matching
-if len(video1_scenes) == len(video2_scenes):
-    # Count of scene changes match, try to map them
+def match_frames(video1_hashes: [], video2_hashes: []) -> []:
+    # O^2 solution, but maybe it will do
+    matches = []
+
+    for i in range(len(video1_hashes)):
+        for j in range(len(video2_hashes)):
+            if np.array_equal(video1_hashes[i], video2_hashes[j]):
+                matches.append((i, j))
+                break
+
+    return matches
+
+
+def adjust_videos(video1_scenes, video2_scenes) -> {}:
     deltas = []
     for lhs_time, rhs_time in zip(video1_scenes, video2_scenes):
         deltas.append(lhs_time - rhs_time)
@@ -68,7 +82,7 @@ if len(video1_scenes) == len(video2_scenes):
 
     # if frame_duration is bigger than biggest delta, then no work to be done
     if frame_duration < max_delta:
-        pass                        # for now
+        pass  # for now
 
     video1_segment = dict()
     video1_segment["begin"] = 0.0
@@ -85,7 +99,52 @@ if len(video1_scenes) == len(video2_scenes):
 
     segments = [segment_scope]
 
+    output = dict()
     output["segments"] = segments
+    return output
+
+
+output = {}
+
+if len(sys.argv) != 3:
+    print(f"python {sys.argv[0]} video1 video2")
+    exit(1)
+
+else:
+    video1 = sys.argv[1]
+    video2 = sys.argv[2]
+
+    temp_location = tempfile.gettempdir() + "/VOF/" + str(os.getpid()) + "/"
+    video1_scenes_location = temp_location + "1"
+    video2_scenes_location = temp_location + "2"
+
+    # filters to be considered: atadenoise,hue=s=0,scdet=s=1:t=10
+    video1_scenes = process_video(video1, video1_scenes_location)
+    video2_scenes = process_video(video2, video2_scenes_location)
+
+    # perform matching
+    if len(video1_scenes) == len(video2_scenes):
+        # Count of scene changes match, try to map them
+        output = adjust_videos(video1_scenes, video2_scenes)
+
+    else:
+        # calculate img hash for all detected scene changes
+        video1_hashes = generate_hashes(video1_scenes_location)
+        video2_hashes = generate_hashes(video2_scenes_location)
+
+        # find corresponding scenes
+        matching_frames = match_frames(video1_hashes, video2_hashes)
+
+        if len(matching_frames) > 1:
+            video1_frames_with_match = []
+            video2_frames_with_match = []
+
+            for (match1, match2) in matching_frames:
+                video1_frames_with_match.append(video1_scenes[match1])
+                video2_frames_with_match.append(video2_scenes[match2])
+
+            output = adjust_videos(video1_frames_with_match, video2_frames_with_match)
+
+    shutil.rmtree(temp_location)
 
 print(json.dumps(output))
-shutil.rmtree(temp_location)
