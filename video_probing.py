@@ -25,6 +25,10 @@ def fps(path: str) -> float:
                              "default=noprint_wrappers=1:nokey=1",
                              path],
                             capture_output=True)
-    fps_str = status.stdout
-    fps = eval(fps_str)
+    fps_bytes = status.stdout
+    fps_str = fps_bytes.decode("utf-8")
+    fps_list = fps_str.split("\n")
+    valid_fps = [fps for fps in fps_list if len(fps) > 0 and fps[0] != "0"]
+    fps_line = valid_fps[0]
+    fps = eval(fps_line)
     return fps
