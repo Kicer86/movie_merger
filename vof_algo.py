@@ -17,9 +17,7 @@ def match_frames(video1_hashes: [], video2_hashes: []) -> []:
 def adjust_videos(video1_scenes: [], video2_scenes: [],
                   video1_fps: int, video2_fps: int,
                   video1_length: float, video2_length: float) -> {}:
-    deltas = []
-    for lhs_time, rhs_time in zip(video1_scenes, video2_scenes):
-        deltas.append(lhs_time - rhs_time)
+    deltas = [abs(lhs_time - rhs_time) for lhs_time, rhs_time in zip(video1_scenes, video2_scenes)]
 
     max_delta = max(deltas)
 
@@ -31,13 +29,15 @@ def adjust_videos(video1_scenes: [], video2_scenes: [],
     if frame_duration < max_delta:
         pass  # for now
 
-    video1_segment = dict()
-    video1_segment["begin"] = 0.0
-    video1_segment["end"] = video1_length
+    video1_segment = {
+        "begin": 0.0,
+        "end": video1_length
+    }
 
-    video2_segment = dict()
-    video2_segment["begin"] = 0.0
-    video2_segment["end"] = video2_length
+    video2_segment = {
+        "begin": 0.0,
+        "end": video2_length
+    }
 
     segment_scope = {
         "#1": video1_segment,
@@ -46,5 +46,4 @@ def adjust_videos(video1_scenes: [], video2_scenes: [],
 
     segments = [segment_scope]
 
-    output = {"segments": segments}
-    return output
+    return {"segments": segments}
