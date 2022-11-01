@@ -48,8 +48,8 @@ for (video1, video2) in video_pairs:
     segment_scope = segments[0]
 
     try:
-        video1_segment_details = segment_scope.get(video1_path)
-        video2_segment_details = segment_scope.get(video2_path)
+        video1_segment_details = segment_scope.get("#1")
+        video2_segment_details = segment_scope.get("#2")
 
         video1_segment_begin = video1_segment_details.get("begin")
         video2_segment_begin = video2_segment_details.get("begin")
