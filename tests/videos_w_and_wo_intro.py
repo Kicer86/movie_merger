@@ -7,6 +7,7 @@ import subprocess
 import sys
 
 import video_probing
+import unit_tests.utils
 
 
 vof_script = sys.argv[1]
@@ -33,40 +34,33 @@ for (video1, video2) in video_pairs:
 
     output = json.loads(status.stdout)
 
-    # verify overlapping regions
-    if not "segments" in output:
-        print("Segments were expected")
-        exit(1)
+    video1_len = video_probing.length(video1_path)
+    video2_len = video_probing.length(video2_path)
 
-    segments = output["segments"]
+    expected_offset = abs(video1_len - video2_len)
+    video1_expected_begin = 0.0 if video1_len < video2_len else expected_offset
+    video2_expected_begin = 0.0 if video2_len < video1_len else expected_offset
 
-    if len(segments) != 1:
-        print("1 segment was expected")
-        exit(1)
+    expected_result = {
+        "segments": [
+            {
+                "#1": {
+                    "begin": unit_tests.utils.Around(video1_expected_begin),
+                    "end": unit_tests.utils.Around(video1_len)
+                },
+                "#2": {
+                    "begin": unit_tests.utils.Around(video2_expected_begin),
+                    "end": unit_tests.utils.Around(video2_len)
+                }
+            }
+        ]
+    }
 
-    segment_scope = segments[0]
-
-    try:
-        video1_segment_details = segment_scope.get(video1_path)
-        video2_segment_details = segment_scope.get(video2_path)
-
-        video1_segment_begin = video1_segment_details.get("begin")
-        video2_segment_begin = video2_segment_details.get("begin")
-        video1_segment_end = video1_segment_details.get("end")
-        video2_segment_end = video2_segment_details.get("end")
-
-        video1_len = video_probing.length(video1_path)
-        video2_len = video_probing.length(video2_path)
-
-        if video1_segment_begin != 0.0 or video1_segment_end != video1_len or video2_segment_begin != 0.0 or video2_segment_end != video2_len:
-            print("Videos are not overlapped in the expected way")
-            exit(1)
-
-        passes = passes + 1
-
-    except:
+    if output != expected_result:
         print("No valid segments data")
         exit(1)
+
+    passes = passes + 1
 
 if passes == len(video_pairs):
     print("All cases passed")
