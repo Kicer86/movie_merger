@@ -116,7 +116,7 @@ add_test(
             ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/utils_tests.py
 )
 
-if(OFF)
+if(ON)
     add_test(
         NAME same_videos_diff_fps
         COMMAND ${python}
