@@ -9,8 +9,8 @@ import subprocess
 import shutil
 import tempfile
 
-import video_probing
-import vof_algo
+import mod.video_probing as video_probing
+import mod.vof_algo as vof_algo
 
 
 def process_video(path: str, wd: str) -> []:
