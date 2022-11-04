@@ -55,3 +55,10 @@ def adjust_videos(video1_scenes: [], video2_scenes: [],
     segments = [segment_scope]
 
     return {"segments": segments}
+
+
+def are_timestamps_equal(timestamp1: float, timestamp2: float, video1_fps: float, video2_fps: float) -> bool:
+    min_fps = min([video1_fps, video2_fps])
+    frame_duration = 1 / min_fps
+
+    return abs(timestamp1 - timestamp2) < frame_duration
