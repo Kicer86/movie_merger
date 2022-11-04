@@ -2,6 +2,7 @@
 import cv2 as cv
 import numpy as np
 
+
 def match_frames(video1_hashes: [], video2_hashes: [], comp) -> []:
     # O^2 solution, but maybe it will do
     matches = []
