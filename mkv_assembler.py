@@ -53,9 +53,12 @@ def process_recipe(recipe: dict):
         file2_begin = file2_segment.get("begin")
         file2_end = file2_segment.get("end")
 
+        file2_len_scaled = file2_end - file2_begin
+
         temp_location = tempfile.gettempdir() + "/MKVAssembler/" + str(os.getpid()) + "/"
         os.makedirs(name = temp_location)
 
+        # extract audio from second file
         audio_codec_type = video_probing.audio_codec(files[1])
         audio_codec_ext = audio_codec_type
         audio_codec = "copy"
@@ -65,9 +68,17 @@ def process_recipe(recipe: dict):
             audio_codec_ext = "ogg"
             audio_codec = "libvorbis"
 
-        process = subprocess.Popen(["ffmpeg", "-hide_banner", "-nostats", "-i", files[1], "-vn", "-acodec", audio_codec,
-                                    temp_location + "file2_audio." + audio_codec_ext]
-                                   )
+        ffmpeg_exec = ["ffmpeg", "-hide_banner", "-nostats", "-i", files[1], "-vn", "-acodec", audio_codec]
+
+        # check if we need to scale audio to match desired length
+        if abs(file2_len_scaled - file2_len) > 0.1:
+            scale_factor = file2_len / file2_len_scaled
+            ffmpeg_exec.append("-filter:a")
+            ffmpeg_exec.append("atempo=" + str(scale_factor))
+
+        ffmpeg_exec.append(temp_location + "file2_audio." + audio_codec_ext)
+
+        process = subprocess.Popen(ffmpeg_exec)
         process.wait()
 
     except:
