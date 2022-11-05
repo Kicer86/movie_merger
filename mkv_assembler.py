@@ -132,7 +132,7 @@ def process_recipe(recipe: dict):
             file2_audio_process.wait()
 
         # build mkv file
-        print()
+        subprocess.Popen(["mkvmerge", "-o", temp_location + "output.mkv", files[0], file2_audio]).wait()
 
     except:
         print("Invalid recipe structure")
