@@ -47,7 +47,7 @@ def audio_codec(path: str) -> str:
             break
 
         line = line_raw.decode("utf-8")
-        matched = re.search("^.* Audio: ([^ ]+) .+", line)
+        matched = re.search("^.* Audio: ([a-z0-9]+).+", line)
 
         if matched:
             codec = matched.group(1)
