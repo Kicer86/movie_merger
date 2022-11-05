@@ -59,6 +59,8 @@ def process_recipe(recipe: dict):
         audio_codec_type = video_probing.audio_codec(files[1])
         audio_codec_ext = audio_codec_type
         audio_codec = "copy"
+
+        # TODO: I couldn't figure out how to simply copy this codec, so for now it is being transformed into ogg
         if audio_codec_type == "cook":
             audio_codec_ext = "ogg"
             audio_codec = "libvorbis"
