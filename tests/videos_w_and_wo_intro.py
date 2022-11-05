@@ -6,7 +6,7 @@ import json
 import subprocess
 import sys
 
-import video_probing
+import mod.video_probing as video_probing
 import unit_tests.utils
 
 

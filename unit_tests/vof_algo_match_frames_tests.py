@@ -5,7 +5,7 @@ import numpy as np
 import sys
 sys.path.append("..")
 
-import vof_algo
+import mod.vof_algo as vof_algo
 
 
 class TestVOFAlgorithms(unittest.TestCase):
