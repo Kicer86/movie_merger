@@ -18,6 +18,32 @@ def load_recipe(path: str) -> dict:
     return data
 
 
+def extract_audio(path: str, scale: float, wd: str) -> ():
+    audio_codec_type = video_probing.audio_codec(path)
+    audio_codec_ext = audio_codec_type
+    audio_codec = "copy"
+
+    # TODO: I couldn't figure out how to simply copy this codec, so for now it is being transformed into ogg
+    if audio_codec_type == "cook":
+        audio_codec_ext = "flac"
+        audio_codec = "flac"
+
+    ffmpeg_exec = ["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-vn", "-acodec", audio_codec]
+
+    # check if we need to scale audio to match desired length
+    if abs(scale - 1.0) > 0.001:
+        ffmpeg_exec.append("-filter:a")
+        ffmpeg_exec.append("atempo=" + str(scale))
+
+    tmp_file=tempfile.NamedTemporaryFile(dir=wd)
+    output_file = tmp_file.name + "." + audio_codec_ext
+    ffmpeg_exec.append(output_file)
+
+    process = subprocess.Popen(ffmpeg_exec)
+    return (output_file, process)
+
+
+
 def process_recipe(recipe: dict):
     try:
         files = recipe.get("files")
@@ -58,28 +84,55 @@ def process_recipe(recipe: dict):
         temp_location = tempfile.gettempdir() + "/MKVAssembler/" + str(os.getpid()) + "/"
         os.makedirs(name = temp_location)
 
-        # extract audio from second file
-        audio_codec_type = video_probing.audio_codec(files[1])
-        audio_codec_ext = audio_codec_type
-        audio_codec = "copy"
+        # extract audio from files
+        file2_audio, file2_audio_process = extract_audio(files[1], file2_len / file2_len_scaled, temp_location)
 
-        # TODO: I couldn't figure out how to simply copy this codec, so for now it is being transformed into ogg
-        if audio_codec_type == "cook":
-            audio_codec_ext = "ogg"
-            audio_codec = "libvorbis"
+        # if second file's audio track is shorter, embed it in first file's audio
+        if file2_begin > file1_begin or file2_end < file1_end:
+            file1_audio, file1_audio_process = extract_audio(files[0], 1.0, temp_location)
+            file2_audio_process.wait()
+            file1_audio_process.wait()
 
-        ffmpeg_exec = ["ffmpeg", "-hide_banner", "-nostats", "-i", files[1], "-vn", "-acodec", audio_codec]
+            ffmpeg_exec = ["ffmpeg", "-i", file1_audio, "-i", file2_audio]
+            ffmpeg_exec.append("-filter_complex")
 
-        # check if we need to scale audio to match desired length
-        if abs(file2_len_scaled - file2_len) > 0.1:
-            scale_factor = file2_len / file2_len_scaled
-            ffmpeg_exec.append("-filter:a")
-            ffmpeg_exec.append("atempo=" + str(scale_factor))
+            filter_complex = str()
+            audio_inputs = ""
+            audio_parts = 1
+            if file2_begin > file1_begin:
+                # take intro part from first file
+                audio_input = "[audio" + str(audio_parts) + "]"
+                filter_complex += "[0:0]atrim=end=" + str(file2_begin) + audio_input + ";"
+                audio_parts += 1
+                audio_inputs += audio_input
 
-        ffmpeg_exec.append(temp_location + "file2_audio." + audio_codec_ext)
+            audio_inputs += "[1:0]"
 
-        process = subprocess.Popen(ffmpeg_exec)
-        process.wait()
+            if file2_end < file1_end:
+                # take outro part
+                audio_input = "[audio" + str(audio_parts) + "]"
+                filter_complex += "[0:0]atrim=start=" + str(file2_end) + audio_input + ";"
+                audio_parts += 1
+                audio_inputs += audio_input
+
+            filter_complex += audio_inputs + "concat=n=" + str(audio_parts) + ":v=0:a=1[output]"
+            #filter_complex += "\""
+
+            ffmpeg_exec.append(filter_complex)
+
+            ffmpeg_exec.append("-map")
+            ffmpeg_exec.append("[output]")
+
+            output_file = temp_location + "mixed_audio.flac"
+            ffmpeg_exec.append(output_file)
+
+            subprocess.Popen(ffmpeg_exec).wait()
+            file2_audio = output_file
+        else:
+            file2_audio_process.wait()
+
+        # build mkv file
+        print()
 
     except:
         print("Invalid recipe structure")
