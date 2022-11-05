@@ -70,7 +70,6 @@ def process_recipe(recipe: dict):
                                    )
         process.wait()
 
-
     except:
         print("Invalid recipe structure")
         exit(1)
