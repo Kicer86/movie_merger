@@ -22,21 +22,31 @@ def adjust_videos(video1_scenes: [], video2_scenes: [],
     assert len(video1_scenes) == len(video2_scenes)
     assert len(video1_scenes) > 1
 
-    deltas = [abs(lhs_time - rhs_time) for lhs_time, rhs_time in zip(video1_scenes, video2_scenes)]
-    avg_delta = sum(deltas)/len(deltas)
-    delta_diffs = [abs(delta - avg_delta) for delta in deltas]
-    max_diff = max(delta_diffs)
+    for i in range(2):
+        deltas = [abs(lhs_time - rhs_time) for lhs_time, rhs_time in zip(video1_scenes, video2_scenes)]
+        avg_delta = sum(deltas)/len(deltas)
+        delta_diffs = [abs(delta - avg_delta) for delta in deltas]
+        max_diff = max(delta_diffs)
 
-    # find what is the frame duration of video with lower fps
-    min_fps = min([video1_fps, video2_fps])
-    frame_duration = 1 / min_fps
+        # find what is the frame duration of video with lower fps
+        min_fps = min([video1_fps, video2_fps])
+        frame_duration = 1 / min_fps
 
-    video1_begin = video1_scenes[0] - video2_scenes[0] if video1_scenes[0] > video2_scenes[0] else 0.0
-    video2_begin = video2_scenes[0] - video1_scenes[0] if video2_scenes[0] > video1_scenes[0] else 0.0
+        video1_begin = video1_scenes[0] - video2_scenes[0] if video1_scenes[0] > video2_scenes[0] else 0.0
+        video2_begin = video2_scenes[0] - video1_scenes[0] if video2_scenes[0] > video1_scenes[0] else 0.0
 
-    # if frame_duration is bigger than the biggest diff, then no work to be done
-    if frame_duration < max_diff:
-        pass  # for now
+        # if frame_duration is less than the biggest diff, then apply adjustments and try again
+        if frame_duration < max_diff and i == 0:
+            #calculate % of diff for first and last frame
+            first_diff_percent = video1_scenes[0] / video2_scenes[0]
+            last_diff_percent = video1_scenes[-1] / video2_scenes[-1]
+
+            # apply correction for all scenes and video length
+            avg_percent = (first_diff_percent + last_diff_percent) / 2
+            video2_scenes = [timestamp * avg_percent for timestamp in video2_scenes]
+            video2_length *= avg_percent
+        else:
+            break
 
     video1_segment = {
         "begin": video1_begin,

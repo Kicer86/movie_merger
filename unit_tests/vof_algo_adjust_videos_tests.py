@@ -61,6 +61,31 @@ class TestVOFAlgorithms(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
+    def test_speedup_video(self):
+        video1_frames = [1.0, 10.0]
+        video2_frames = [0.8, 8.0]              # second video goes faster than first one
+
+        result = vof_algo.adjust_videos(video1_frames, video2_frames,
+                                        video1_fps=30, video2_fps=24,
+                                        video1_length=20, video2_length=16)
+
+        expected_result = {
+            "segments": [
+                {
+                    "#1": {
+                        "begin": utils.Around(0.0),
+                        "end": utils.Around(20)
+                    },
+                    "#2": {
+                        "begin": utils.Around(0.0),
+                        "end": utils.Around(20)             # video 2 was expanded
+                    }
+                }
+            ]
+        }
+
+        self.assertEqual(result, expected_result)
+
 
 if __name__ == '__main__':
     unittest.main()
