@@ -16,10 +16,10 @@ import mod.vof_algo as vof_algo
 def process_video(path: str, wd: str) -> []:
     os.makedirs(name = wd)
     process = subprocess.Popen(["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-filter:v", "scale=-1:240,select=gt(scene\,0.3),showinfo",
-                               "-fps_mode", "passthrough", wd + "/%05d.jpg"],
+                               "-fps_mode", "passthrough", wd + "/%05d.png"],
                               stderr=subprocess.PIPE)
 
-    result = []
+    result = {}
 
     while True:
         line_raw = process.stderr.readline()
@@ -28,30 +28,24 @@ def process_video(path: str, wd: str) -> []:
 
         line = line_raw.decode("utf-8")
         if line[1:17] == "Parsed_showinfo_":
-            matched = re.search("^\[Parsed_showinfo_.+ n: +([0-9]+) .+ pts_time:([0-9\.]+).+", line)
+            matched = re.search("^\[Parsed_showinfo_.+ n: *([0-9]+) .+ pts_time:([0-9\.]+).+", line)
 
             if matched:
                 frame_id = int(matched.group(1)) + 1
                 time_sig = float(matched.group(2))
 
-                result.append(time_sig)
+                result[frame_id] = { "time": time_sig }
 
     return result
 
 
-def generate_hashes(scenes_location: str) -> []:
-    images = [os.path.join(scenes_location, img) for img in os.listdir(scenes_location)
-              if os.path.isfile(os.path.join(scenes_location, img))]
-
-    hashes = [None for i in range(len(images))]
-    for image_path in images:
-        image = cv.imread(image_path)
+def generate_hashes(scenes_location: str, scenes: {}) -> []:
+    for scene, params in scenes.items():
+        frame_path = os.path.join(scenes_location, "{:05}.png".format(scene))
+        image = cv.imread(frame_path)
         img_hash = cv.img_hash.blockMeanHash(image)
         # img_hash = int.from_bytes(img_hash_raw.tobytes(), byteorder='big', signed=False)
-        scene_no = int(os.path.splitext(os.path.basename(image_path))[0]) - 1   # count from zero
-        hashes[scene_no] = img_hash
-
-    return hashes
+        params["hash"] = img_hash
 
 
 output = {}
@@ -72,6 +66,9 @@ else:
     video1_scenes = process_video(video1, video1_scenes_location)
     video2_scenes = process_video(video2, video2_scenes_location)
 
+    print(f"Scene changes for video #1: {len(video1_scenes)}")
+    print(f"Scene changes for video #2: {len(video2_scenes)}")
+
     video1_fps = video_probing.fps(video1)
     video2_fps = video_probing.fps(video2)
 
@@ -79,25 +76,29 @@ else:
     video2_len = video_probing.length(video2)
 
     # perform matching
-    video1_hashes = generate_hashes(video1_scenes_location)
-    video2_hashes = generate_hashes(video2_scenes_location)
+    generate_hashes(video1_scenes_location, video1_scenes)
+    generate_hashes(video2_scenes_location, video2_scenes)
 
     # find corresponding scenes
     hash_algo = cv.img_hash.BlockMeanHash().create()
-    matching_frames = vof_algo.match_frames(video1_hashes, video2_hashes,
+    matching_frames = vof_algo.match_scenes(video1_scenes, video2_scenes,
                                             lambda l, r: hash_algo.compare(l, r) < 10)
 
     if len(matching_frames) > 1:
-        video1_frames_with_match = []
-        video2_frames_with_match = []
+        print("first matching pair: {}. last matching pair {}".format(matching_frames[0], matching_frames[-1]))
+
+        matching_timestamps1 = []
+        matching_timestamps2 = []
 
         for (match1, match2) in matching_frames:
-            video1_frames_with_match.append(video1_scenes[match1])
-            video2_frames_with_match.append(video2_scenes[match2])
+            matching_timestamps1.append(video1_scenes[match1]["time"])
+            matching_timestamps2.append(video2_scenes[match2]["time"])
 
-        output = vof_algo.adjust_videos(video1_frames_with_match, video2_frames_with_match,
+        output = vof_algo.adjust_videos(matching_timestamps1, matching_timestamps2,
                                         video1_fps, video2_fps,
                                         video1_len, video2_len)
+    else:
+        print(f"Found: {len(matching_frames)} matching frames. At least two are necessary")
 
     shutil.rmtree(temp_location)
 

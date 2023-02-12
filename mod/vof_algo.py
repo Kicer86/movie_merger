@@ -16,6 +16,19 @@ def match_frames(video1_hashes: [], video2_hashes: [], comp) -> []:
     return matches
 
 
+def match_scenes(video1_scenes: {}, video2_scenes: {}, comp) -> []:
+    # O^2 solution, but it should do
+    matches = []
+
+    for scene1, params1 in video1_scenes.items():
+        for scene2, params2 in video2_scenes.items():
+            if comp(params1["hash"], params2["hash"]):
+                matches.append((scene1, scene2))
+                break
+
+    return matches
+
+
 def adjust_videos(video1_keyframes: [], video2_keyframes: [],
                   video1_fps: float, video2_fps: float,
                   video1_length: float, video2_length: float) -> {}:
