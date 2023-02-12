@@ -3,9 +3,11 @@ import cv2 as cv
 import json
 import numpy as np
 import os
+from PIL import Image
 import re
 import sys
 import subprocess
+from scipy.stats import entropy
 import shutil
 import tempfile
 
@@ -34,19 +36,33 @@ def process_video(path: str, wd: str) -> []:
                 frame_id = int(matched.group(1)) + 1
                 time_sig = float(matched.group(2))
 
-                result[frame_id] = { "time": time_sig }
+                result[frame_id] = { "time": time_sig,
+                                     "path": os.path.join(wd, "{:05}.png".format(frame_id)) }
 
     return result
 
 
-def generate_hashes(scenes_location: str, scenes: {}) -> []:
+def generate_hashes( scenes: {}) -> []:
     for scene, params in scenes.items():
-        frame_path = os.path.join(scenes_location, "{:05}.png".format(scene))
+        frame_path = params["path"]
         image = cv.imread(frame_path)
         img_hash = cv.img_hash.blockMeanHash(image)
         # img_hash = int.from_bytes(img_hash_raw.tobytes(), byteorder='big', signed=False)
         params["hash"] = img_hash
 
+
+def frame_entropy(path: str) -> float:
+    pil_image = Image.open(path)
+    image = np.array(pil_image.convert("L"))
+    histogram, _ = np.histogram(image, bins=256, range=(0, 256))
+    histogram = histogram / float(np.sum(histogram))
+    e = entropy(histogram)
+    return e;
+
+
+def filter_low_detailed(scenes: {}):
+    valuable_scenes = { scene: params for scene, params in scenes.items() if frame_entropy(params["path"]) > 4}
+    return valuable_scenes
 
 output = {}
 
@@ -75,9 +91,12 @@ else:
     video1_len = video_probing.length(video1)
     video2_len = video_probing.length(video2)
 
+    video1_scenes = filter_low_detailed(video1_scenes)
+    video2_scenes = filter_low_detailed(video2_scenes)
+
     # perform matching
-    generate_hashes(video1_scenes_location, video1_scenes)
-    generate_hashes(video2_scenes_location, video2_scenes)
+    generate_hashes(video1_scenes)
+    generate_hashes(video2_scenes)
 
     # find corresponding scenes
     hash_algo = cv.img_hash.BlockMeanHash().create()
