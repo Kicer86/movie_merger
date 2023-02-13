@@ -66,13 +66,15 @@ def filter_low_detailed(scenes: {}):
 
 output = {}
 
-if len(sys.argv) != 3:
-    print(f"python {sys.argv[0]} video1 video2")
+if len(sys.argv) < 3 or len(sys.argv) > 5:
+    print(f"python {sys.argv[0]} video1 video2 [output.json] [matching-timestamps.csv]")
     exit(1)
 
 else:
     video1 = sys.argv[1]
     video2 = sys.argv[2]
+    output_json = sys.argv[3]
+    timestamps_csv = sys.argv[4] if len(sys.argv) == 5 else None
 
     temp_location = tempfile.gettempdir() + "/VOF/" + str(os.getpid()) + "/"
     video1_scenes_location = temp_location + "1"
@@ -93,6 +95,9 @@ else:
 
     video1_scenes = filter_low_detailed(video1_scenes)
     video2_scenes = filter_low_detailed(video2_scenes)
+
+    print(f"Scenes for video #1 after filtration: {len(video1_scenes)}")
+    print(f"Scenes for video #2 after filtration: {len(video2_scenes)}")
 
     # perform matching
     generate_hashes(video1_scenes)
@@ -116,9 +121,25 @@ else:
         output = vof_algo.adjust_videos(matching_timestamps1, matching_timestamps2,
                                         video1_fps, video2_fps,
                                         video1_len, video2_len)
+
+        #generate csv file
+        if timestamps_csv:
+            timestamps_file = open(timestamps_csv, "w")
+
+            for (timestamp1, timestamp2) in zip(matching_timestamps1, matching_timestamps2):
+                timestamps_file.write(f"{timestamp1}, {timestamp2}\n")
+
+            timestamps_file.close()
+
     else:
         print(f"Found: {len(matching_frames)} matching frames. At least two are necessary")
 
     shutil.rmtree(temp_location)
 
-print(json.dumps(output))
+# generate json file
+if output_json:
+    output_file = open(output_json, "w")
+    output_file.write(json.dumps(output))
+    output_file.close()
+else:
+    print(json.dumps(output))
