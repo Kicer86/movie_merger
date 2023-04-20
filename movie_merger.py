@@ -2,10 +2,23 @@
 import magic
 import os
 import sys
+from pathlib import Path
 
 
-def simple_subtitle_search(path: str):
-    pass
+def simple_subtitle_search(path: str) -> [str]:
+    video_name = Path(path).stem
+    video_extension = Path(path).suffix
+    dir = Path(path).parent
+
+    subtitles = []
+
+    for subtitle_ext in ["txt", "srt"]:
+        subtitle_file = video_name + "." + subtitle_ext
+        subtitle_path = os.path.join(dir, subtitle_file)
+        if os.path.exists(subtitle_file):
+            subtitles.append(subtitle_file)
+
+    return subtitles
 
 
 def aggressive_subtitle_search(path: str):
