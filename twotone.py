@@ -1,4 +1,5 @@
 
+import argparse
 import magic
 import os
 import sys
@@ -53,11 +54,15 @@ class TwoTone:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Provide path to scan")
-        exit(1)
+    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file.')
+    parser.add_argument('--analyze-mime',
+                        action = 'store_true',
+                        default = False,
+                        help = 'Use file mime type instead of file extension for video files recognition. It is slower but more accurate.')
+    parser.add_argument('videos_path',
+                        nargs = 1,
+                        help = 'Path with videos to combine')
+    args = parser.parse_args()
 
-    videos_path = sys.argv[1]
-
-    two_tone = TwoTone(False)
-    two_tone.process_dir(videos_path)
+    two_tone = TwoTone(use_mime = args.analyze_mime)
+    two_tone.process_dir(args.videos_path)
