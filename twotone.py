@@ -28,14 +28,16 @@ class TwoTone:
         return subtitles
 
 
-    def _aggressive_subtitle_search(self, path: str):
+    def _aggressive_subtitle_search(self, path: str) -> [str]:
         self._simple_subtitle_search(path)
-        pass
 
 
-    def _is_video(self, file: str):
-        mime = magic.from_file(file, mime=True)
-        return mime[:5] == "video"
+    def _is_video(self, file: str) -> bool:
+        if self.use_mime == True:
+            mime = magic.from_file(file, mime=True)
+            return mime[:5] == "video"
+        else:
+            return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg"]
 
 
     def process_dir(self, path: str):
@@ -65,4 +67,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     two_tone = TwoTone(use_mime = args.analyze_mime)
-    two_tone.process_dir(args.videos_path)
+    two_tone.process_dir(args.videos_path[0])
