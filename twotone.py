@@ -10,6 +10,7 @@ class TwoTone:
     def __init__(self, use_mime: bool):
         self.use_mime = use_mime
 
+
     def _simple_subtitle_search(self, path: str) -> [str]:
         video_name = Path(path).stem
         video_extension = Path(path).suffix
