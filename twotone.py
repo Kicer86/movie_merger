@@ -2,6 +2,7 @@
 import argparse
 import magic
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -12,10 +13,13 @@ class TwoTone:
         self.use_mime = use_mime
         self.dry_run = dry_run
 
+    def _split_path(self, path: str) -> (str, str, str):
+        info = Path(path)
+
+        return str(info.parent), info.stem, info.suffix[1:]
 
     def _simple_subtitle_search(self, path: str) -> [str]:
         video_name = Path(path).stem
-        video_extension = Path(path).suffix
         dir = Path(path).parent
 
         subtitles = []
@@ -40,10 +44,37 @@ class TwoTone:
         else:
             return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg"]
 
+    def _run_mkvmerge(self, options: [str]):
+        if not self.dry_run:
+            process = ["mkvmerge"]
+            process.extend(options)
+            result = subprocess.run(process)
 
-    def _merge(self, path: str, subtitles: [str]):
-        print(f"add subtitles {subtitles} into video file: {path}")
+            return result.returncode == 0
+        else:
+            return False
 
+
+    def _merge(self, input_video: str, subtitles: [str]):
+        print(f"add subtitles {subtitles} into video file: {input_video}")
+
+        video_dir, video_name, video_extension = self._split_path(input_video)
+        tmp_video = video_dir + "/." + video_name + "." + "mkv"
+        output_video = video_dir + "/" + video_name + "." + "mkv"
+
+        options = ["-o", tmp_video, input_video]
+        options.extend(subtitles)
+        status = self._run_mkvmerge(options)
+
+        if not self.dry_run and status and os.path.exists(tmp_video):
+            to_remove = [input_video]
+            to_remove.extend(subtitles)
+
+            for file_to_remove in to_remove:
+                #os.remove(file_to_remove)
+                pass
+
+            os.rename(tmp_video, output_video)
 
 
     def process_dir(self, path: str):
