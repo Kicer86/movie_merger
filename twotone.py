@@ -9,9 +9,10 @@ from pathlib import Path
 
 class TwoTone:
 
-    def __init__(self, use_mime: bool, dry_run: bool):
+    def __init__(self, use_mime: bool, dry_run: bool, language: str):
         self.use_mime = use_mime
         self.dry_run = dry_run
+        self.language = language
 
     def _split_path(self, path: str) -> (str, str, str):
         info = Path(path)
@@ -63,7 +64,14 @@ class TwoTone:
         output_video = video_dir + "/" + video_name + "." + "mkv"
 
         options = ["-o", tmp_video, input_video]
-        options.extend(subtitles)
+
+        for subtitle in subtitles:
+            if self.language:
+                options.append("--language")
+                options.append("0:" + self.language)
+
+            options.append(subtitle)
+
         status = self._run_mkvmerge(options)
 
         if not self.dry_run and status and os.path.exists(tmp_video):
@@ -71,7 +79,7 @@ class TwoTone:
             to_remove.extend(subtitles)
 
             for file_to_remove in to_remove:
-                #os.remove(file_to_remove)
+                os.remove(file_to_remove)
                 pass
 
             os.rename(tmp_video, output_video)
@@ -111,7 +119,10 @@ if __name__ == '__main__':
                         default = False,
                         help = 'No not modify any file, just print what will happen')
 
+    parser.add_argument("--language", "-l",
+                        help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages')
+
     args = parser.parse_args()
 
-    two_tone = TwoTone(use_mime = args.analyze_mime, dry_run = args.dry_run)
+    two_tone = TwoTone(use_mime = args.analyze_mime, dry_run = args.dry_run, language = args.language)
     two_tone.process_dir(args.videos_path[0])
