@@ -8,8 +8,9 @@ from pathlib import Path
 
 class TwoTone:
 
-    def __init__(self, use_mime: bool):
+    def __init__(self, use_mime: bool, dry_run: bool):
         self.use_mime = use_mime
+        self.dry_run = dry_run
 
 
     def _simple_subtitle_search(self, path: str) -> [str]:
@@ -41,7 +42,8 @@ class TwoTone:
 
 
     def _merge(self, path: str, subtitles: [str]):
-        print(f"merging subtitles {subtitles} into video file: {path}")
+        print(f"add subtitles {subtitles} into video file: {path}")
+
 
 
     def process_dir(self, path: str):
@@ -73,7 +75,12 @@ if __name__ == '__main__':
     parser.add_argument('videos_path',
                         nargs = 1,
                         help = 'Path with videos to combine')
+    parser.add_argument("--dry-run", "-n",
+                        action = 'store_true',
+                        default = False,
+                        help = 'No not modify any file, just print what will happen')
+
     args = parser.parse_args()
 
-    two_tone = TwoTone(use_mime = args.analyze_mime)
+    two_tone = TwoTone(use_mime = args.analyze_mime, dry_run = args.dry_run)
     two_tone.process_dir(args.videos_path[0])
