@@ -22,14 +22,14 @@ class TwoTone:
         for subtitle_ext in ["txt", "srt"]:
             subtitle_file = video_name + "." + subtitle_ext
             subtitle_path = os.path.join(dir, subtitle_file)
-            if os.path.exists(subtitle_file):
-                subtitles.append(subtitle_file)
+            if os.path.exists(subtitle_path):
+                subtitles.append(subtitle_path)
 
         return subtitles
 
 
     def _aggressive_subtitle_search(self, path: str) -> [str]:
-        self._simple_subtitle_search(path)
+        return self._simple_subtitle_search(path)
 
 
     def _is_video(self, file: str) -> bool:
@@ -38,6 +38,10 @@ class TwoTone:
             return mime[:5] == "video"
         else:
             return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg"]
+
+
+    def _merge(self, path: str, subtitles: [str]):
+        print(f"merging subtitles {subtitles} into video file: {path}")
 
 
     def process_dir(self, path: str):
@@ -49,10 +53,15 @@ class TwoTone:
                 self.process_dir(entry.path)
 
         if len(video_files) == 1:
-            self._aggressive_subtitle_search(video_files[0])
+            video_file = video_files[0]
+            subtitles = self._aggressive_subtitle_search(video_file)
+            if subtitles:
+                self._merge(video_file, subtitles)
         if len(video_files) > 1:
             for video_file in video_files:
-                self._simple_subtitle_search(video_file)
+                subtitles = self._simple_subtitle_search(video_file)
+                if subtitles:
+                    self._merge(video_file, subtitles)
 
 
 if __name__ == '__main__':
