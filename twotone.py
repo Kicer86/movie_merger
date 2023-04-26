@@ -1,10 +1,11 @@
 
 import argparse
-import magic
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+import utils
 
 
 class TwoTone:
@@ -37,13 +38,6 @@ class TwoTone:
     def _aggressive_subtitle_search(self, path: str) -> [str]:
         return self._simple_subtitle_search(path)
 
-
-    def _is_video(self, file: str) -> bool:
-        if self.use_mime == True:
-            mime = magic.from_file(file, mime=True)
-            return mime[:5] == "video"
-        else:
-            return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg"]
 
     def _run_mkvmerge(self, options: [str]):
         if not self.dry_run:
@@ -88,7 +82,7 @@ class TwoTone:
     def process_dir(self, path: str):
         video_files = []
         for entry in os.scandir(path):
-            if entry.is_file() and self._is_video(entry.path):
+            if entry.is_file() and utils.is_video(entry.path, self.use_mime):
                 video_files.append(entry.path)
             elif entry.is_dir():
                 self.process_dir(entry.path)
