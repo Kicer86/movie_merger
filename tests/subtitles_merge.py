@@ -1,9 +1,13 @@
 
+import sys
+sys.path.append("..")
+
 import inspect
 import os
 import shutil
 import unittest
 
+import utils
 
 def prepare_temp_dir():
     tmp_dir = "_" + inspect.stack()[1].function
@@ -21,7 +25,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         td = prepare_temp_dir()
 
         for video in os.scandir("videos"):
-            os.symlink(video, td + "/" + video.name)
+            if (utils.is_video(video.path, use_mime = False)):
+                os.symlink(video, td + "/" + video.name)
         pass
 
 
