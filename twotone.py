@@ -99,7 +99,7 @@ class TwoTone:
                     self._merge(video_file, subtitles)
 
 
-if __name__ == '__main__':
+def run(sys_args: [str]):
     parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file.')
     parser.add_argument('--analyze-mime',
                         action = 'store_true',
@@ -116,7 +116,11 @@ if __name__ == '__main__':
     parser.add_argument("--language", "-l",
                         help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages')
 
-    args = parser.parse_args()
+    args = parser.parse_args(sys_args)
 
     two_tone = TwoTone(use_mime = args.analyze_mime, dry_run = args.dry_run, language = args.language)
     two_tone.process_dir(args.videos_path[0])
+
+
+if __name__ == '__main__':
+    run(sys.argv[1:])
