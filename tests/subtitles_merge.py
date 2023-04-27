@@ -61,11 +61,31 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 os.symlink(os.path.join(os.getcwd(), subtitle.path), os.path.join(td.path, subtitle.name))
 
             hashes_before = hashes(td.path)
-            self.assertTrue(len(hashes_before) == 2 * 9)        # 9 videos and 9 subtitles expected
+            self.assertEqual(len(hashes_before), 2 * 9)        # 9 videos and 9 subtitles expected
             twotone.run([td.path, "--dry-run"])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
+
+    def test_many_videos_conversion(self):
+        with TestDataWorkingDirectory() as td:
+            for video in os.scandir("videos"):
+                if (utils.is_video(video.path, use_mime = False)):
+                    os.symlink(os.path.join(os.getcwd(), video.path), os.path.join(td.path, video.name))
+
+            for subtitle in os.scandir("subtitles"):
+                os.symlink(os.path.join(os.getcwd(), subtitle.path), os.path.join(td.path, subtitle.name))
+
+            hashes_before = hashes(td.path)
+            self.assertEqual(len(hashes_before), 2 * 9)        # 9 videos and 9 subtitles expected
+
+            twotone.run([td.path])
+
+            hashes_after = hashes(td.path)
+            self.assertEqual(len(hashes_after), 1 * 9)        # 9 mkv videos expected
+
+            for video, _ in hashes_after:
+                self.assertEqual(video[-4:], ".mkv")
 
 
 if __name__ == '__main__':
