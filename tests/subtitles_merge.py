@@ -122,7 +122,6 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 self.assertEqual(len(tracks["video"]), 1)
                 self.assertEqual(len(tracks["subtitles"]), 1)
 
-
     def test_appending_subtitles_to_mkv_with_subtitles(self):
         with TestDataWorkingDirectory() as td:
 
