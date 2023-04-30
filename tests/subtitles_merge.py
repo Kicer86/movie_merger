@@ -6,6 +6,7 @@ import hashlib
 import inspect
 import os
 import shutil
+import tempfile
 import unittest
 
 import utils
@@ -49,11 +50,11 @@ class TestDataWorkingDirectory:
         return self.directory
 
     def __enter__(self):
-        self.directory = "_" + inspect.stack()[1].function
+        self.directory = os.path.join(tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
         if os.path.exists(self.directory):
             shutil.rmtree(self.directory)
 
-        os.mkdir(self.directory)
+        os.makedirs(self.directory, exist_ok=True)
         return self
 
     def __exit__(self, type, value, traceback):
