@@ -6,6 +6,7 @@ import hashlib
 import inspect
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -39,6 +40,25 @@ def hashes(path: str) -> [()]:
             results.append((filepath, file_hash.hexdigest()))
 
     return results
+
+
+def file_tracks(path: str) -> ():
+    tracks= {}
+
+    process = subprocess.run(["mkvmerge", "-i", path], env={"LC_ALL": "C"}, capture_output=True)
+
+    output_lines = process.stdout.splitlines()
+    for output_line in output_lines:
+        line = output_line.rstrip().decode("utf-8")
+        if line[:8] == "Track ID":
+            line_splited = line[9:].split(" ")
+            id = line_splited[0]
+            type = line_splited[1]
+            details = " ".join(line_splited[2:])
+
+            tracks.setdefault(type, []).append(details)
+
+    return tracks
 
 
 class TestDataWorkingDirectory:
@@ -98,6 +118,13 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             for video in files_after:
                 self.assertEqual(video[-4:], ".mkv")
+                tracks = file_tracks(video)
+                self.assertEqual(len(tracks["video"]), 1)
+                self.assertEqual(len(tracks["subtitles"]), 1)
+
+
+    def test_appending_subtitles_to_mkv_with_subtitles(self):
+        pass
 
 
 if __name__ == '__main__':
