@@ -12,19 +12,30 @@ import utils
 import twotone
 
 
-def hashes(path: str) -> [()]:
+def list_files(path: str) -> []:
     results = []
 
     for filename in os.listdir(path):
         filepath = os.path.join(path, filename)
 
         if os.path.isfile(filepath):
-            with open(filepath, "rb") as f:
-                file_hash = hashlib.md5()
-                while chunk := f.read(8192):
-                    file_hash.update(chunk)
+            results.append(filepath)
 
-                results.append((filename, file_hash.hexdigest()))
+    return results
+
+
+def hashes(path: str) -> [()]:
+    results = []
+
+    files = list_files(path)
+
+    for filepath in files:
+        with open(filepath, "rb") as f:
+            file_hash = hashlib.md5()
+            while chunk := f.read(8192):
+                file_hash.update(chunk)
+
+            results.append((filepath, file_hash.hexdigest()))
 
     return results
 
@@ -76,15 +87,15 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             for subtitle in os.scandir("subtitles"):
                 os.symlink(os.path.join(os.getcwd(), subtitle.path), os.path.join(td.path, subtitle.name))
 
-            hashes_before = hashes(td.path)
-            self.assertEqual(len(hashes_before), 2 * 9)        # 9 videos and 9 subtitles expected
+            files_before = list_files(td.path)
+            self.assertEqual(len(files_before), 2 * 9)        # 9 videos and 9 subtitles expected
 
             twotone.run([td.path])
 
-            hashes_after = hashes(td.path)
-            self.assertEqual(len(hashes_after), 1 * 9)        # 9 mkv videos expected
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1 * 9)        # 9 mkv videos expected
 
-            for video, _ in hashes_after:
+            for video in files_after:
                 self.assertEqual(video[-4:], ".mkv")
 
 
