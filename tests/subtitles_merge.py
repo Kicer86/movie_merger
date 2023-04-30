@@ -4,6 +4,7 @@ sys.path.append("..")
 
 import hashlib
 import inspect
+import json
 import os
 import shutil
 import subprocess
@@ -45,18 +46,15 @@ def hashes(path: str) -> [()]:
 def file_tracks(path: str) -> ():
     tracks= {}
 
-    process = subprocess.run(["mkvmerge", "-i", path], env={"LC_ALL": "C"}, capture_output=True)
+    process = subprocess.run(["mkvmerge", "-J", path], env={"LC_ALL": "C"}, capture_output=True)
 
-    output_lines = process.stdout.splitlines()
-    for output_line in output_lines:
-        line = output_line.rstrip().decode("utf-8")
-        if line[:8] == "Track ID":
-            line_splited = line[9:].split(" ")
-            id = line_splited[0]
-            type = line_splited[1]
-            details = " ".join(line_splited[2:])
+    output_lines = process.stdout
+    output_str = output_lines.decode('utf8')
+    output_json = json.loads(output_lines)
 
-            tracks.setdefault(type, []).append(details)
+    for track in output_json["tracks"]:
+        type = track["type"]
+        tracks.setdefault(type, []).append(track)
 
     return tracks
 
@@ -149,6 +147,29 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitles"]), 2)
+
+    def test_subtitles_language(self):
+        with TestDataWorkingDirectory() as td:
+
+            # combine mp4 with srt into mkv
+            os.symlink(os.path.join(os.getcwd(), "videos", "Atoms - 8579.mp4"),
+                       os.path.join(td.path, "Atoms - 8579.mp4"))
+
+            os.symlink(os.path.join(os.getcwd(), "subtitles", "Atoms - 8579.srt"),
+                       os.path.join(td.path, "Atoms - 8579.srt"))
+
+            twotone.run([td.path, "-l", "pol"])
+
+            # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitles"]), 1)
+            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "pol")
 
 
 if __name__ == '__main__':
