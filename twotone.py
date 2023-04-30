@@ -1,10 +1,12 @@
 
 import argparse
-import magic
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+import utils
 
 
 class TwoTone:
@@ -38,18 +40,16 @@ class TwoTone:
         return self._simple_subtitle_search(path)
 
 
-    def _is_video(self, file: str) -> bool:
-        if self.use_mime == True:
-            mime = magic.from_file(file, mime=True)
-            return mime[:5] == "video"
-        else:
-            return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg"]
-
-    def _run_mkvmerge(self, options: [str]):
+    def _run_mkvmerge(self, options: [str]) -> bool:
         if not self.dry_run:
             process = ["mkvmerge"]
             process.extend(options)
-            result = subprocess.run(process)
+            result = subprocess.run(process, capture_output = True)
+
+            logging.debug(result.stdout)
+
+            if result.stderr:
+                logging.error(result.stderr)
 
             return result.returncode == 0
         else:
@@ -57,7 +57,9 @@ class TwoTone:
 
 
     def _merge(self, input_video: str, subtitles: [str]):
-        print(f"add subtitles {subtitles} into video file: {input_video}")
+        logging.info(f"Video file: {input_video}")
+        for subtitle in subtitles:
+            logging.info(f"\tadd subtitles: {subtitle}")
 
         video_dir, video_name, video_extension = self._split_path(input_video)
         tmp_video = video_dir + "/." + video_name + "." + "mkv"
@@ -88,7 +90,7 @@ class TwoTone:
     def process_dir(self, path: str):
         video_files = []
         for entry in os.scandir(path):
-            if entry.is_file() and self._is_video(entry.path):
+            if entry.is_file() and utils.is_video(entry.path, self.use_mime):
                 video_files.append(entry.path)
             elif entry.is_dir():
                 self.process_dir(entry.path)
@@ -105,7 +107,7 @@ class TwoTone:
                     self._merge(video_file, subtitles)
 
 
-if __name__ == '__main__':
+def run(sys_args: [str]):
     parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file.')
     parser.add_argument('--analyze-mime',
                         action = 'store_true',
@@ -122,7 +124,14 @@ if __name__ == '__main__':
     parser.add_argument("--language", "-l",
                         help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages')
 
-    args = parser.parse_args()
+    args = parser.parse_args(sys_args)
 
     two_tone = TwoTone(use_mime = args.analyze_mime, dry_run = args.dry_run, language = args.language)
     two_tone.process_dir(args.videos_path[0])
+
+
+if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+    logging.info("Searching for movie and subtitle files to be merged")
+    run(sys.argv[1:])
+    logging.info("Done")
