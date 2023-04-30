@@ -124,7 +124,32 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
 
     def test_appending_subtitles_to_mkv_with_subtitles(self):
-        pass
+        with TestDataWorkingDirectory() as td:
+
+            # combine mp4 with srt into mkv
+            os.symlink(os.path.join(os.getcwd(), "videos", "Atoms - 8579.mp4"),
+                       os.path.join(td.path, "Atoms - 8579.mp4"))
+
+            os.symlink(os.path.join(os.getcwd(), "subtitles", "Atoms - 8579.srt"),
+                       os.path.join(td.path, "Atoms - 8579.srt"))
+
+            twotone.run([td.path])
+
+            # combine mkv with srt into mkv with 2 subtitles
+            os.symlink(os.path.join(os.getcwd(), "subtitles", "Atoms - 8579.srt"),
+                       os.path.join(td.path, "Atoms - 8579.srt"))
+
+            twotone.run([td.path])
+
+            # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitles"]), 2)
 
 
 if __name__ == '__main__':
