@@ -1,5 +1,6 @@
 
 import argparse
+import logging
 import os
 import subprocess
 import sys
@@ -39,11 +40,16 @@ class TwoTone:
         return self._simple_subtitle_search(path)
 
 
-    def _run_mkvmerge(self, options: [str]):
+    def _run_mkvmerge(self, options: [str]) -> bool:
         if not self.dry_run:
             process = ["mkvmerge"]
             process.extend(options)
-            result = subprocess.run(process)
+            result = subprocess.run(process, capture_output = True)
+
+            logging.debug(result.stdout)
+
+            if result.stderr:
+                logging.error(result.stderr)
 
             return result.returncode == 0
         else:
@@ -51,7 +57,9 @@ class TwoTone:
 
 
     def _merge(self, input_video: str, subtitles: [str]):
-        print(f"add subtitles {subtitles} into video file: {input_video}")
+        logging.info(f"Video file: {input_video}")
+        for subtitle in subtitles:
+            logging.info(f"\tadd subtitles: {subtitle}")
 
         video_dir, video_name, video_extension = self._split_path(input_video)
         tmp_video = video_dir + "/." + video_name + "." + "mkv"
@@ -123,4 +131,7 @@ def run(sys_args: [str]):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+    logging.info("Searching for movie and subtitle files to be merged")
     run(sys.argv[1:])
+    logging.info("Done")
