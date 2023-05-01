@@ -37,8 +37,14 @@ class TwoTone:
 
 
     def _aggressive_subtitle_search(self, path: str) -> [str]:
-        return self._simple_subtitle_search(path)
+        subtitles = self._simple_subtitle_search(path)
+        dir = Path(path).parent
 
+        for entry in os.scandir(dir):
+            if entry.is_file() and entry.path[-4:] == ".srt":
+                subtitles.append(entry.path)
+
+        return list(set(subtitles))
 
     def _run_mkvmerge(self, options: [str]) -> bool:
         if not self.dry_run:

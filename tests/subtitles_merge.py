@@ -171,6 +171,34 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(tracks["subtitles"]), 1)
             self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "pol")
 
+    def test_multiple_subtitles_for_single_file(self):
+        with TestDataWorkingDirectory() as td:
+
+            # one file in directory with many subtitles
+            os.symlink(os.path.join(os.getcwd(), "videos", "herd-of-horses-in-fog-13642605.mp4"),
+                       os.path.join(td.path, "herd-of-horses-in-fog-13642605.mp4"))
+
+            os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
+                       os.path.join(td.path, "herd-of-horses-in-fog-13642605-EN.srt"))
+
+            os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
+                       os.path.join(td.path, "herd-of-horses-in-fog-13642605-DE.srt"))
+
+            os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
+                       os.path.join(td.path, "herd-of-horses-in-fog-13642605.txt"))
+
+            twotone.run([td.path])
+
+            # verify results: all subtitle-like files should be sucked in
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitles"]), 3)
+
 
 if __name__ == '__main__':
     unittest.main()
