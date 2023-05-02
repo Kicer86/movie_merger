@@ -1,5 +1,4 @@
 
-
 import sys
 sys.path.append("..")
 
@@ -27,6 +26,7 @@ class UtilsTests(unittest.TestCase):
     def test_subtitle_detection(self):
         self._test_content("12:34:56:test", True)
         self._test_content("{1}{2}test", True)
+        self._test_content("12:34:56:test\n21:01:45:test2", True)
         self._test_content("12:34:5:test", False)
         self._test_content("12:test", False)
         self._test_content("{12}:test", False)

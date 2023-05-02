@@ -22,7 +22,7 @@ def is_subtitle(file: str) -> bool:
         return True
     elif ext == ".txt":
         with open(file, 'r') as text_file:
-            line = text_file.readline()
+            line = text_file.readline().rstrip()
 
             if txt_format1.fullmatch(line) or txt_format2.fullmatch(line):
                 return True
