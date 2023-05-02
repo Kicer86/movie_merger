@@ -192,10 +192,31 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             #expect nothing to be changed
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
-            twotone.run([td.path])
+            twotone.run([td.path, "--disable-txt"])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
+
+    def test_raw_txt_subtitles_conversion(self):
+        # Allow automatic txt to srt conversion
+        with TestDataWorkingDirectory() as td:
+            os.symlink(os.path.join(current_path, "videos", "herd-of-horses-in-fog-13642605.mp4"),
+                       os.path.join(td.path, "Horses.mp4"))
+
+            os.symlink(os.path.join(current_path, "subtitles_txt", "herd-of-horses-in-fog-13642605.txt"),
+                       os.path.join(td.path, "Horses.txt"))
+
+            twotone.run([td.path])
+
+            # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitles"]), 1)
 
 
 if __name__ == '__main__':

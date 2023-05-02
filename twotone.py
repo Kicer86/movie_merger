@@ -11,10 +11,20 @@ import utils
 
 class TwoTone:
 
-    def __init__(self, use_mime: bool, dry_run: bool, language: str):
+    def __init__(self, use_mime: bool, dry_run: bool, language: str, disable_txt: bool):
         self.use_mime = use_mime
         self.dry_run = dry_run
         self.language = language
+        self.disable_txt = disable_txt
+        self.leftovers = []
+
+    def _register_leftover(self, path: str):
+        self.leftovers.append(path)
+
+    def _remove_leftovers(self):
+        for file_to_remove in self.leftovers:
+            os.remove(file_to_remove)
+        self.leftovers.clear()
 
     def _split_path(self, path: str) -> (str, str, str):
         info = Path(path)
@@ -48,7 +58,27 @@ class TwoTone:
 
     def _filter_subtitles(self, subtitles: [str]) -> [str]:
         # mkvmerge does not support txt subtitles, so drop them
-        return [subtitle for subtitle in subtitles if subtitle[-4:] != ".txt"]
+        return [subtitle for subtitle in subtitles if subtitle[-4:] != ".txt" or self.disable_txt == False]
+
+    def _convert_subtitles(self, subtitles: [str]) -> [str]:
+        converted_subtitles = []
+        for subtitle in subtitles:
+            if subtitle[-4:] == ".txt":
+                subtitle_path = Path(subtitle)
+                subtitle_dir = subtitle_path.parent
+                subtitle_name = subtitle_path.stem
+                output_subtitle = os.path.join(subtitle_dir, f".twotone_{subtitle_name}.srt")
+
+                status = subprocess.run(["subconvert", "-c", "-o", output_subtitle, subtitle], capture_output = True)
+                if status.returncode != 0:
+                    raise RuntimeError("subconvert exited with unexpected error")
+
+                converted_subtitles.append(output_subtitle)
+                self._register_leftover(subtitle)
+            else:
+                converted_subtitles.append(subtitle)
+
+        return converted_subtitles
 
     def _run_mkvmerge(self, options: [str]) -> bool:
         if not self.dry_run:
@@ -77,27 +107,31 @@ class TwoTone:
 
         options = ["-o", tmp_video, input_video]
 
+        self._register_leftover(input_video)
+
         for subtitle in subtitles:
             if self.language:
                 options.append("--language")
                 options.append("0:" + self.language)
 
             options.append(subtitle)
+            self._register_leftover(subtitle)
 
         status = self._run_mkvmerge(options)
 
         if status:
             if not self.dry_run and os.path.exists(tmp_video):
-                to_remove = [input_video]
-                to_remove.extend(subtitles)
-
-                for file_to_remove in to_remove:
-                    os.remove(file_to_remove)
-                    pass
-
+                self._remove_leftovers()
                 os.rename(tmp_video, output_video)
         else:
             raise RuntimeError("mkvmerge exited with unexpected error.")
+
+    def _process_video(self, video_file: str, subtitles_fetcher):
+        all_subtitles = subtitles_fetcher(video_file)
+        filtered_subtitles = self._filter_subtitles(all_subtitles)
+        converted_subtitles = self._convert_subtitles(filtered_subtitles)
+        if converted_subtitles:
+            self._merge(video_file, converted_subtitles)
 
     def process_dir(self, path: str):
         video_files = []
@@ -108,16 +142,10 @@ class TwoTone:
                 self.process_dir(entry.path)
 
         if len(video_files) == 1:
-            video_file = video_files[0]
-            subtitles = self._filter_subtitles(self._aggressive_subtitle_search(video_file))
-            if subtitles:
-                self._merge(video_file, subtitles)
+            self._process_video(video_files[0], self._aggressive_subtitle_search)
         if len(video_files) > 1:
             for video_file in video_files:
-                subtitles = self._filter_subtitles(self._simple_subtitle_search(video_file))
-                if subtitles:
-                    self._merge(video_file, subtitles)
-
+                self._process_video(video_file, self._simple_subtitle_search)
 
 def run(sys_args: [str]):
     parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file.')
@@ -127,18 +155,24 @@ def run(sys_args: [str]):
                         help = 'Use file mime type instead of file extension for video files recognition. It is slower but more accurate.')
     parser.add_argument('videos_path',
                         nargs = 1,
-                        help = 'Path with videos to combine')
+                        help = 'Path with videos to combine.')
     parser.add_argument("--dry-run", "-n",
                         action = 'store_true',
                         default = False,
-                        help = 'No not modify any file, just print what will happen')
-
+                        help = 'No not modify any file, just print what will happen.')
     parser.add_argument("--language", "-l",
-                        help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages')
+                        help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages.')
+    parser.add_argument("--disable-txt", "-t",
+                        action = 'store_true',
+                        default = False,
+                        help = 'Disable automatic conversion txt subtitles to srt ones (txt subtitles will be ignored as mkvmerge does not understand them).')
 
     args = parser.parse_args(sys_args)
 
-    two_tone = TwoTone(use_mime = args.analyze_mime, dry_run = args.dry_run, language = args.language)
+    two_tone = TwoTone(use_mime = args.analyze_mime,
+                       dry_run = args.dry_run,
+                       language = args.language,
+                       disable_txt = args.disable_txt)
     two_tone.process_dir(args.videos_path[0])
 
 
