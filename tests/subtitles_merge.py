@@ -177,6 +177,23 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitles"]), 3)
 
+    def test_raw_txt_subtitles_are_ignored(self):
+        # mkvmerge does not allow txt files with subtitles to be merged
+        with TestDataWorkingDirectory() as td:
+            os.symlink(os.path.join(os.getcwd(), "videos", "herd-of-horses-in-fog-13642605.mp4"),
+                       os.path.join(td.path, "Horses.mp4"))
+
+            os.symlink(os.path.join(os.getcwd(), "subtitles_txt", "herd-of-horses-in-fog-13642605.txt"),
+                       os.path.join(td.path, "Horses.txt"))
+
+            #expect nothing to be changed
+            hashes_before = hashes(td.path)
+            self.assertEqual(len(hashes_before), 2)
+            twotone.run([td.path])
+            hashes_after = hashes(td.path)
+
+            self.assertEqual(hashes_before, hashes_after)
+
 
 if __name__ == '__main__':
     unittest.main()

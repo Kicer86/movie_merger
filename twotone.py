@@ -46,6 +46,10 @@ class TwoTone:
 
         return list(set(subtitles))
 
+    def _filter_subtitles(self, subtitles: [str]) -> [str]:
+        # mkvmerge does not support txt subtitles, so drop them
+        return [subtitle for subtitle in subtitles if subtitle[-4:] != ".txt"]
+
     def _run_mkvmerge(self, options: [str]) -> bool:
         if not self.dry_run:
             process = ["mkvmerge"]
@@ -59,7 +63,7 @@ class TwoTone:
 
             return result.returncode == 0
         else:
-            return False
+            return True
 
 
     def _merge(self, input_video: str, subtitles: [str]):
@@ -82,16 +86,18 @@ class TwoTone:
 
         status = self._run_mkvmerge(options)
 
-        if not self.dry_run and status and os.path.exists(tmp_video):
-            to_remove = [input_video]
-            to_remove.extend(subtitles)
+        if status:
+            if not self.dry_run and os.path.exists(tmp_video):
+                to_remove = [input_video]
+                to_remove.extend(subtitles)
 
-            for file_to_remove in to_remove:
-                os.remove(file_to_remove)
-                pass
+                for file_to_remove in to_remove:
+                    os.remove(file_to_remove)
+                    pass
 
-            os.rename(tmp_video, output_video)
-
+                os.rename(tmp_video, output_video)
+        else:
+            raise RuntimeError("mkvmerge exited with unexpected error.")
 
     def process_dir(self, path: str):
         video_files = []
@@ -103,12 +109,12 @@ class TwoTone:
 
         if len(video_files) == 1:
             video_file = video_files[0]
-            subtitles = self._aggressive_subtitle_search(video_file)
+            subtitles = self._filter_subtitles(self._aggressive_subtitle_search(video_file))
             if subtitles:
                 self._merge(video_file, subtitles)
         if len(video_files) > 1:
             for video_file in video_files:
-                subtitles = self._simple_subtitle_search(video_file)
+                subtitles = self._filter_subtitles(self._simple_subtitle_search(video_file))
                 if subtitles:
                     self._merge(video_file, subtitles)
 
@@ -139,5 +145,10 @@ def run(sys_args: [str]):
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     logging.info("Searching for movie and subtitle files to be merged")
-    run(sys.argv[1:])
+    try:
+        run(sys.argv[1:])
+    except RuntimeError as e:
+        logging.error(f"Unexpected error occured: {e}. Terminating")
+        exit(1)
+
     logging.info("Done")
