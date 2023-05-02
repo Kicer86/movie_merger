@@ -16,15 +16,15 @@ class TwoTone:
         self.dry_run = dry_run
         self.language = language
         self.disable_txt = disable_txt
-        self.leftovers = []
+        self.to_be_removed = []
 
-    def _register_leftover(self, path: str):
-        self.leftovers.append(path)
+    def _remove_later(self, path: str):
+        self.to_be_removed.append(path)
 
-    def _remove_leftovers(self):
-        for file_to_remove in self.leftovers:
+    def _remove(self):
+        for file_to_remove in self.to_be_removed:
             os.remove(file_to_remove)
-        self.leftovers.clear()
+        self.to_be_removed.clear()
 
     def _split_path(self, path: str) -> (str, str, str):
         info = Path(path)
@@ -74,7 +74,7 @@ class TwoTone:
                     raise RuntimeError("subconvert exited with unexpected error")
 
                 converted_subtitles.append(output_subtitle)
-                self._register_leftover(subtitle)
+                self._remove_later(subtitle)
             else:
                 converted_subtitles.append(subtitle)
 
@@ -107,7 +107,7 @@ class TwoTone:
 
         options = ["-o", tmp_video, input_video]
 
-        self._register_leftover(input_video)
+        self._remove_later(input_video)
 
         for subtitle in subtitles:
             if self.language:
@@ -115,13 +115,13 @@ class TwoTone:
                 options.append("0:" + self.language)
 
             options.append(subtitle)
-            self._register_leftover(subtitle)
+            self._remove_later(subtitle)
 
         status = self._run_mkvmerge(options)
 
         if status:
             if not self.dry_run and os.path.exists(tmp_video):
-                self._remove_leftovers()
+                self._remove()
                 os.rename(tmp_video, output_video)
         else:
             raise RuntimeError("mkvmerge exited with unexpected error.")
