@@ -163,7 +163,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                        os.path.join(td.path, "herd-of-horses-in-fog-13642605-DE.srt"))
 
             os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
-                       os.path.join(td.path, "herd-of-horses-in-fog-13642605.txt"))
+                       os.path.join(td.path, "herd-of-horses-in-fog-13642605-PL.srt"))
 
             twotone.run([td.path])
 

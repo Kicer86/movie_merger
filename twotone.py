@@ -30,7 +30,7 @@ class TwoTone:
         for subtitle_ext in ["txt", "srt"]:
             subtitle_file = video_name + "." + subtitle_ext
             subtitle_path = os.path.join(dir, subtitle_file)
-            if os.path.exists(subtitle_path):
+            if os.path.exists(subtitle_path) and utils.is_subtitle(subtitle_path):
                 subtitles.append(subtitle_path)
 
         return subtitles
@@ -41,7 +41,7 @@ class TwoTone:
         dir = Path(path).parent
 
         for entry in os.scandir(dir):
-            if entry.is_file() and entry.path[-4:] == ".srt":
+            if entry.is_file() and utils.is_subtitle(entry.path):
                 subtitles.append(entry.path)
 
         return list(set(subtitles))
