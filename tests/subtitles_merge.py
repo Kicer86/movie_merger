@@ -3,16 +3,14 @@ import sys
 sys.path.append("..")
 
 import hashlib
-import inspect
 import json
 import os
-import shutil
 import subprocess
-import tempfile
 import unittest
 
 import utils
 import twotone
+from common import TestDataWorkingDirectory
 
 
 def list_files(path: str) -> []:
@@ -57,26 +55,6 @@ def file_tracks(path: str) -> ():
         tracks.setdefault(type, []).append(track)
 
     return tracks
-
-
-class TestDataWorkingDirectory:
-    def __init__(self):
-        self.directory = None
-
-    @property
-    def path(self):
-        return self.directory
-
-    def __enter__(self):
-        self.directory = os.path.join(tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
-        if os.path.exists(self.directory):
-            shutil.rmtree(self.directory)
-
-        os.makedirs(self.directory, exist_ok=True)
-        return self
-
-    def __exit__(self, type, value, traceback):
-        shutil.rmtree(self.directory)
 
 
 class SimpleSubtitlesMerge(unittest.TestCase):
