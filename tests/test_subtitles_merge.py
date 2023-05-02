@@ -13,6 +13,9 @@ import twotone
 from common import TestDataWorkingDirectory
 
 
+current_path = os.path.dirname(os.path.abspath(__file__))
+
+
 def list_files(path: str) -> []:
     results = []
 
@@ -61,11 +64,11 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
-            for video in os.scandir("videos"):
+            for video in os.scandir(os.path.join(current_path, "videos")):
                 if (utils.is_video(video.path, use_mime = False)):
                     os.symlink(os.path.join(os.getcwd(), video.path), os.path.join(td.path, video.name))
 
-            for subtitle in os.scandir("subtitles"):
+            for subtitle in os.scandir(os.path.join(current_path, "subtitles")):
                 os.symlink(os.path.join(os.getcwd(), subtitle.path), os.path.join(td.path, subtitle.name))
 
             hashes_before = hashes(td.path)
@@ -77,11 +80,11 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
     def test_many_videos_conversion(self):
         with TestDataWorkingDirectory() as td:
-            for video in os.scandir("videos"):
+            for video in os.scandir(os.path.join(current_path, "videos")):
                 if (utils.is_video(video.path, use_mime = False)):
                     os.symlink(os.path.join(os.getcwd(), video.path), os.path.join(td.path, video.name))
 
-            for subtitle in os.scandir("subtitles"):
+            for subtitle in os.scandir(os.path.join(current_path, "subtitles")):
                 os.symlink(os.path.join(os.getcwd(), subtitle.path), os.path.join(td.path, subtitle.name))
 
             files_before = list_files(td.path)
@@ -102,16 +105,16 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
 
             # combine mp4 with srt into mkv
-            os.symlink(os.path.join(os.getcwd(), "videos", "Atoms - 8579.mp4"),
+            os.symlink(os.path.join(current_path, "videos", "Atoms - 8579.mp4"),
                        os.path.join(td.path, "Atoms - 8579.mp4"))
 
-            os.symlink(os.path.join(os.getcwd(), "subtitles", "Atoms - 8579.srt"),
+            os.symlink(os.path.join(current_path, "subtitles", "Atoms - 8579.srt"),
                        os.path.join(td.path, "Atoms - 8579.srt"))
 
             twotone.run([td.path])
 
             # combine mkv with srt into mkv with 2 subtitles
-            os.symlink(os.path.join(os.getcwd(), "subtitles", "Atoms - 8579.srt"),
+            os.symlink(os.path.join(current_path, "subtitles", "Atoms - 8579.srt"),
                        os.path.join(td.path, "Atoms - 8579.srt"))
 
             twotone.run([td.path])
@@ -130,10 +133,10 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
 
             # combine mp4 with srt into mkv
-            os.symlink(os.path.join(os.getcwd(), "videos", "Atoms - 8579.mp4"),
+            os.symlink(os.path.join(current_path, "videos", "Atoms - 8579.mp4"),
                        os.path.join(td.path, "Atoms - 8579.mp4"))
 
-            os.symlink(os.path.join(os.getcwd(), "subtitles", "Atoms - 8579.srt"),
+            os.symlink(os.path.join(current_path, "subtitles", "Atoms - 8579.srt"),
                        os.path.join(td.path, "Atoms - 8579.srt"))
 
             twotone.run([td.path, "-l", "pol"])
@@ -153,16 +156,16 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
 
             # one file in directory with many subtitles
-            os.symlink(os.path.join(os.getcwd(), "videos", "herd-of-horses-in-fog-13642605.mp4"),
+            os.symlink(os.path.join(current_path, "videos", "herd-of-horses-in-fog-13642605.mp4"),
                        os.path.join(td.path, "herd-of-horses-in-fog-13642605.mp4"))
 
-            os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
+            os.symlink(os.path.join(current_path, "subtitles", "herd-of-horses-in-fog-13642605.srt"),
                        os.path.join(td.path, "herd-of-horses-in-fog-13642605-EN.srt"))
 
-            os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
+            os.symlink(os.path.join(current_path, "subtitles", "herd-of-horses-in-fog-13642605.srt"),
                        os.path.join(td.path, "herd-of-horses-in-fog-13642605-DE.srt"))
 
-            os.symlink(os.path.join(os.getcwd(), "subtitles", "herd-of-horses-in-fog-13642605.srt"),
+            os.symlink(os.path.join(current_path, "subtitles", "herd-of-horses-in-fog-13642605.srt"),
                        os.path.join(td.path, "herd-of-horses-in-fog-13642605-PL.srt"))
 
             twotone.run([td.path])
@@ -180,10 +183,10 @@ class SimpleSubtitlesMerge(unittest.TestCase):
     def test_raw_txt_subtitles_are_ignored(self):
         # mkvmerge does not allow txt files with subtitles to be merged
         with TestDataWorkingDirectory() as td:
-            os.symlink(os.path.join(os.getcwd(), "videos", "herd-of-horses-in-fog-13642605.mp4"),
+            os.symlink(os.path.join(current_path, "videos", "herd-of-horses-in-fog-13642605.mp4"),
                        os.path.join(td.path, "Horses.mp4"))
 
-            os.symlink(os.path.join(os.getcwd(), "subtitles_txt", "herd-of-horses-in-fog-13642605.txt"),
+            os.symlink(os.path.join(current_path, "subtitles_txt", "herd-of-horses-in-fog-13642605.txt"),
                        os.path.join(td.path, "Horses.txt"))
 
             #expect nothing to be changed
