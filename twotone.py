@@ -1,5 +1,6 @@
 
 import argparse
+import langid
 import logging
 import os
 import subprocess
@@ -82,6 +83,16 @@ class TwoTone:
 
         return converted_subtitles
 
+    def _guess_language(self, path: str) -> str:
+        result = ""
+
+        with open(path, "r") as sf:
+            content = sf.readlines()
+            content_joined = "".join(content)
+            result = langid.classify(content_joined)[0]
+
+        return result
+
     def _run_mkvmerge(self, options: [str]) -> bool:
         if not self.dry_run:
             process = ["mkvmerge"]
@@ -113,8 +124,10 @@ class TwoTone:
 
         for subtitle in subtitles:
             if self.language:
+                lang = self.language if self.language != "auto" else self._guess_language(subtitle)
+
                 options.append("--language")
-                options.append("0:" + self.language)
+                options.append("0:" + lang)
 
             options.append(subtitle)
             self._remove_later(subtitle)
@@ -163,7 +176,7 @@ def run(sys_args: [str]):
                         default = False,
                         help = 'No not modify any file, just print what will happen.')
     parser.add_argument("--language", "-l",
-                        help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages.')
+                        help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages. For automatic detection use: auto')
     parser.add_argument("--disable-txt", "-t",
                         action = 'store_true',
                         default = False,

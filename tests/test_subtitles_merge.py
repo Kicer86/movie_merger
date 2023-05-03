@@ -3,29 +3,16 @@ import sys
 sys.path.append("..")
 
 import hashlib
-import json
 import os
 import subprocess
 import unittest
 
 import utils
 import twotone
-from common import TestDataWorkingDirectory
+from common import TestDataWorkingDirectory, file_tracks, list_files
 
 
 current_path = os.path.dirname(os.path.abspath(__file__))
-
-
-def list_files(path: str) -> []:
-    results = []
-
-    for filename in os.listdir(path):
-        filepath = os.path.join(path, filename)
-
-        if os.path.isfile(filepath):
-            results.append(filepath)
-
-    return results
 
 
 def hashes(path: str) -> [()]:
@@ -42,22 +29,6 @@ def hashes(path: str) -> [()]:
             results.append((filepath, file_hash.hexdigest()))
 
     return results
-
-
-def file_tracks(path: str) -> ():
-    tracks= {}
-
-    process = subprocess.run(["mkvmerge", "-J", path], env={"LC_ALL": "C"}, capture_output=True)
-
-    output_lines = process.stdout
-    output_str = output_lines.decode('utf8')
-    output_json = json.loads(output_lines)
-
-    for track in output_json["tracks"]:
-        type = track["type"]
-        tracks.setdefault(type, []).append(track)
-
-    return tracks
 
 
 class SimpleSubtitlesMerge(unittest.TestCase):
