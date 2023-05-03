@@ -74,6 +74,8 @@ class TwoTone:
                     raise RuntimeError("subconvert exited with unexpected error")
 
                 converted_subtitles.append(output_subtitle)
+
+                # register input subtitles for deletion
                 self._remove_later(subtitle)
             else:
                 converted_subtitles.append(subtitle)
