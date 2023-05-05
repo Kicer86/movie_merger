@@ -61,9 +61,10 @@ class TwoTone:
         # mkvmerge does not support txt subtitles, so drop them
         return [subtitle for subtitle in subtitles if subtitle[-4:] != ".txt" or self.disable_txt == False]
 
-    def _convert_subtitles(self, subtitles: [str]) -> [str]:
-        converted_subtitles = []
-        for subtitle in subtitles:
+    def _convert_subtitle_if_needed(self, subtitle: str) -> [str]:
+        converted_subtitle = subtitle
+
+        if self.dry_run == False:
             if subtitle[-4:] == ".txt":
                 subtitle_path = Path(subtitle)
                 subtitle_dir = subtitle_path.parent
@@ -74,19 +75,19 @@ class TwoTone:
                 if status.returncode != 0:
                     raise RuntimeError("subconvert exited with unexpected error")
 
-                converted_subtitles.append(output_subtitle)
+                converted_subtitle = output_subtitle
 
                 # register input subtitles for deletion
                 self._remove_later(subtitle)
-            else:
-                converted_subtitles.append(subtitle)
 
-        return converted_subtitles
+        return converted_subtitle
 
     def _guess_language(self, path: str) -> str:
         result = ""
 
-        with open(path, "r") as sf:
+        encoding = utils.file_encoding(path)
+
+        with open(path, "r", encoding = encoding) as sf:
             content = sf.readlines()
             content_joined = "".join(content)
             result = langid.classify(content_joined)[0]
@@ -108,11 +109,8 @@ class TwoTone:
         else:
             return True
 
-
     def _merge(self, input_video: str, subtitles: [str]):
         logging.info(f"Video file: {input_video}")
-        for subtitle in subtitles:
-            logging.info(f"\tadd subtitles: {subtitle}")
 
         video_dir, video_name, video_extension = self._split_path(input_video)
         tmp_video = video_dir + "/." + video_name + "." + "mkv"
@@ -123,14 +121,22 @@ class TwoTone:
         self._remove_later(input_video)
 
         for subtitle in subtitles:
+            lang = ""
             if self.language:
                 lang = self.language if self.language != "auto" else self._guess_language(subtitle)
 
                 options.append("--language")
                 options.append("0:" + lang)
 
-            options.append(subtitle)
-            self._remove_later(subtitle)
+            converted_subtitle = self._convert_subtitle_if_needed(subtitle)
+
+            self._remove_later(converted_subtitle)
+            if converted_subtitle != subtitle:
+                self._remove_later(subtitle)
+
+            options.append(converted_subtitle)
+
+            logging.info(f"\tadd subtitles [{lang}]: {subtitle}")
 
         status = self._run_mkvmerge(options)
 
@@ -144,9 +150,8 @@ class TwoTone:
     def _process_video(self, video_file: str, subtitles_fetcher):
         all_subtitles = subtitles_fetcher(video_file)
         filtered_subtitles = self._filter_subtitles(all_subtitles)
-        converted_subtitles = self._convert_subtitles(filtered_subtitles)
-        if converted_subtitles:
-            self._merge(video_file, converted_subtitles)
+        if filtered_subtitles:
+            self._merge(video_file, filtered_subtitles)
 
     def process_dir(self, path: str):
         video_files = []
