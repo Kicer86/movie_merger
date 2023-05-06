@@ -76,9 +76,6 @@ class TwoTone:
 
                 converted_subtitle = output_subtitle
 
-                # register input subtitles for deletion
-                self._remove_later(subtitle)
-
         return converted_subtitle
 
     def _guess_language(self, path: str) -> str:
