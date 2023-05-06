@@ -40,6 +40,17 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             self.assertEqual(hashes_before, hashes_after)
 
+    def test_dry_run_with_conversion_is_respected(self):
+        with TestDataWorkingDirectory() as td:
+            add_test_media("herd-of-horses-in-fog.*(mp4|txt)", td.path)
+
+            hashes_before = hashes(td.path)
+            self.assertEqual(len(hashes_before), 2)
+            twotone.run([td.path, "--dry-run"])
+            hashes_after = hashes(td.path)
+
+            self.assertEqual(hashes_before, hashes_after)
+
     def test_many_videos_conversion(self):
         with TestDataWorkingDirectory() as td:
             add_test_media(".*mp4|.*mov|.*srt", td.path)
