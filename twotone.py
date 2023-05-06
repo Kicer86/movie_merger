@@ -46,7 +46,6 @@ class TwoTone:
 
         return subtitles
 
-
     def _aggressive_subtitle_search(self, path: str) -> [str]:
         subtitles = self._simple_subtitle_search(path)
         dir = Path(path).parent
@@ -71,9 +70,9 @@ class TwoTone:
                 subtitle_name = subtitle_path.stem
                 output_subtitle = os.path.join(subtitle_dir, f".twotone_{subtitle_name}.srt")
 
-                status = subprocess.run(["subconvert", "-c", "-o", output_subtitle, subtitle], capture_output = True)
+                status = subprocess.run(["ffmpeg", "-i", subtitle, output_subtitle], capture_output = True)
                 if status.returncode != 0:
-                    raise RuntimeError("subconvert exited with unexpected error")
+                    raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr}")
 
                 converted_subtitle = output_subtitle
 
@@ -94,7 +93,7 @@ class TwoTone:
 
         return result
 
-    def _run_mkvmerge(self, options: [str]) -> bool:
+    def _run_mkvmerge(self, options: [str]):
         if not self.dry_run:
             process = ["mkvmerge"]
             process.extend(options)
@@ -102,12 +101,8 @@ class TwoTone:
 
             logging.debug(result.stdout)
 
-            if result.stderr:
-                logging.error(result.stderr)
-
-            return result.returncode == 0
-        else:
-            return True
+            if result.returncode != 0:
+                raise RuntimeError(f"mkvmerge exited with unexpected error:\n{result.stdout}")
 
     def _merge(self, input_video: str, subtitles: [str]):
         logging.info(f"Video file: {input_video}")
@@ -138,14 +133,11 @@ class TwoTone:
 
             logging.info(f"\tadd subtitles [{lang}]: {subtitle}")
 
-        status = self._run_mkvmerge(options)
+        self._run_mkvmerge(options)
 
-        if status:
-            if not self.dry_run and os.path.exists(tmp_video):
-                self._remove()
-                os.rename(tmp_video, output_video)
-        else:
-            raise RuntimeError("mkvmerge exited with unexpected error.")
+        if not self.dry_run and os.path.exists(tmp_video):
+            self._remove()
+            os.rename(tmp_video, output_video)
 
     def _process_video(self, video_file: str, subtitles_fetcher):
         all_subtitles = subtitles_fetcher(video_file)

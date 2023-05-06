@@ -1,0 +1,33 @@
+
+name: Linux-unittests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  Tests:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Install Python dependencies
+      uses: py-actions/py-dependency-install@v4
+      with:
+        path: "requirements.txt"
+
+    - name: Install required tools
+      run: |
+        sudo apt-get update &&  \
+        sudo apt-get install    \
+          mkvtoolnix            \
+          ffmpeg
+
+    - name: Run unit tests
+      run: |
+        python3 -m unittest discover tests
