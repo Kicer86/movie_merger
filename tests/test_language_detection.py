@@ -6,18 +6,14 @@ import os
 import unittest
 
 import twotone
-from common import TestDataWorkingDirectory, file_tracks, list_files
-
-
-current_path = os.path.dirname(os.path.abspath(__file__))
+from common import TestDataWorkingDirectory, file_tracks, list_files, add_test_media
 
 
 class SimpleSubtitlesMerge(unittest.TestCase):
 
     def test_english_recognition(self):
         with TestDataWorkingDirectory() as td:
-            os.symlink(os.path.join(current_path, "videos", "Frog - 113403.mp4"),
-                       os.path.join(td.path, "Frog.mp4"))
+            add_test_media("Frog.*mp4", td.path)
 
             with open(os.path.join(td.path, "Frog.txt"), "w") as sf:
                 sf.write("00:00:00:Hello World")
@@ -37,8 +33,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
     def test_polish_recognition(self):
         with TestDataWorkingDirectory() as td:
-            os.symlink(os.path.join(current_path, "videos", "Frog - 113403.mp4"),
-                       os.path.join(td.path, "Frog.mp4"))
+            add_test_media("Frog.*mp4", td.path)
 
             with open(os.path.join(td.path, "Frog.txt"), "w") as sf:
                 sf.write("00:00:00:Witaj Świecie")

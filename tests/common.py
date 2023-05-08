@@ -2,9 +2,14 @@
 import inspect
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+
+from pathlib import Path
+
+current_path = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestDataWorkingDirectory:
@@ -53,3 +58,18 @@ def list_files(path: str) -> []:
             results.append(filepath)
 
     return results
+
+
+def add_test_media(filter: str, test_case_path: str, suffixes: [str] = [None]):
+    filter_regex = re.compile(filter)
+
+    for media in ["subtitles", "subtitles_txt", "videos"]:
+        for file in os.scandir(os.path.join(current_path, media)):
+            file_path = file.name
+            if filter_regex.fullmatch(file_path):
+                for suffix in suffixes:
+                    suffix = "" if suffix == None else "-" + suffix + "-"
+                    file_path = Path(file)
+                    dst_file_name = file_path.stem + suffix + file_path.suffix
+                    os.symlink(os.path.join(current_path, media, file_path),
+                               os.path.join(test_case_path, dst_file_name))
