@@ -3,16 +3,12 @@ import sys
 sys.path.append("..")
 
 import hashlib
-import os
 import subprocess
 import unittest
 
 import utils
 import twotone
 from common import TestDataWorkingDirectory, file_tracks, list_files, add_test_media
-
-
-current_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def hashes(path: str) -> [()]:
@@ -108,17 +104,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
 
             # one file in directory with many subtitles
-            os.symlink(os.path.join(current_path, "videos", "herd-of-horses-in-fog-13642605.mp4"),
-                       os.path.join(td.path, "herd-of-horses-in-fog-13642605.mp4"))
-
-            os.symlink(os.path.join(current_path, "subtitles", "herd-of-horses-in-fog-13642605.srt"),
-                       os.path.join(td.path, "herd-of-horses-in-fog-13642605-EN.srt"))
-
-            os.symlink(os.path.join(current_path, "subtitles", "herd-of-horses-in-fog-13642605.srt"),
-                       os.path.join(td.path, "herd-of-horses-in-fog-13642605-DE.srt"))
-
-            os.symlink(os.path.join(current_path, "subtitles", "herd-of-horses-in-fog-13642605.srt"),
-                       os.path.join(td.path, "herd-of-horses-in-fog-13642605-PL.srt"))
+            add_test_media("Atoms.*mp4", td.path)
+            add_test_media("Atoms.*srt", td.path, ["PL", "EN", "DE"])
 
             twotone.run([td.path])
 
@@ -135,11 +122,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
     def test_raw_txt_subtitles_are_ignored(self):
         # mkvmerge does not allow txt files with subtitles to be merged
         with TestDataWorkingDirectory() as td:
-            os.symlink(os.path.join(current_path, "videos", "herd-of-horses-in-fog-13642605.mp4"),
-                       os.path.join(td.path, "Horses.mp4"))
-
-            os.symlink(os.path.join(current_path, "subtitles_txt", "herd-of-horses-in-fog-13642605.txt"),
-                       os.path.join(td.path, "Horses.txt"))
+            add_test_media("herd-of-horses-in-fog.*(mp4|txt)", td.path)
 
             #expect nothing to be changed
             hashes_before = hashes(td.path)
@@ -152,11 +135,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
     def test_raw_txt_subtitles_conversion(self):
         # Allow automatic txt to srt conversion
         with TestDataWorkingDirectory() as td:
-            os.symlink(os.path.join(current_path, "videos", "herd-of-horses-in-fog-13642605.mp4"),
-                       os.path.join(td.path, "Horses.mp4"))
-
-            os.symlink(os.path.join(current_path, "subtitles_txt", "herd-of-horses-in-fog-13642605.txt"),
-                       os.path.join(td.path, "Horses.txt"))
+            add_test_media("herd-of-horses-in-fog.*(mp4|txt)", td.path)
 
             twotone.run([td.path])
 
