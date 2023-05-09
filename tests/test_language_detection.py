@@ -16,8 +16,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             add_test_media("Frog.*mp4", td.path)
 
             with open(os.path.join(td.path, "Frog.txt"), "w") as sf:
-                sf.write("00:00:00:Hello World")
-                sf.write("00:00:06:This is some sample subtitle in english")
+                sf.write("00:00:00:Hello World\n")
+                sf.write("00:00:06:This is some sample subtitle in english\n")
 
             twotone.run([td.path, "-l", "auto"])
 
@@ -36,8 +36,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             add_test_media("Frog.*mp4", td.path)
 
             with open(os.path.join(td.path, "Frog.txt"), "w") as sf:
-                sf.write("00:00:00:Witaj Świecie")
-                sf.write("00:00:06:To jest przykładowy tekst po polsku")
+                sf.write("00:00:00:Witaj Świecie\n")
+                sf.write("00:00:06:To jest przykładowy tekst po polsku\n")
 
             twotone.run([td.path, "-l", "auto"])
 
