@@ -5,6 +5,7 @@ import logging
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import utils
@@ -65,12 +66,13 @@ class TwoTone:
 
         if self.dry_run == False:
             if subtitle[-4:] == ".txt":
-                subtitle_path = Path(subtitle)
-                subtitle_dir = subtitle_path.parent
-                subtitle_name = subtitle_path.stem
-                output_subtitle = os.path.join(subtitle_dir, f".twotone_{subtitle_name}.srt")
+                output_file = tempfile.NamedTemporaryFile()
+                output_subtitle = output_file.name + ".srt"
 
                 status = subprocess.run(["ffmpeg", "-i", subtitle, output_subtitle], capture_output = True)
+
+                output_file.close()
+
                 if status.returncode != 0:
                     raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr}")
 
@@ -121,7 +123,6 @@ class TwoTone:
                 options.append("0:" + lang)
 
             converted_subtitle = self._convert_subtitle_if_needed(subtitle)
-
             self._remove_later(converted_subtitle)
             if converted_subtitle != subtitle:
                 self._remove_later(subtitle)
