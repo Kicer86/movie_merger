@@ -165,9 +165,13 @@ class SubtitlesMerge(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
             add_test_media("Frog.*mp4", td.path)
 
-            with open(os.path.join(td.path, "Frog.srt"), "w") as sf:
+            with open(os.path.join(td.path, "Frog_en.srt"), "w") as sf:
                 sf.write("00:00:00:Hello World\n")
                 sf.write("00:00:06:This is some sample subtitle in english\n")
+
+            with open(os.path.join(td.path, "Frog_pl.srt"), "w", encoding="cp1250") as sf:
+                sf.write("00:00:00:Witaj Świecie\n")
+                sf.write("00:00:06:To jest przykładowy tekst po polsku\n")
 
             twotone.run([td.path])
 
@@ -178,7 +182,7 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
+            self.assertEqual(len(tracks["subtitles"]), 2)
 
 
 if __name__ == '__main__':

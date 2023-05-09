@@ -67,8 +67,9 @@ class TwoTone:
             if utils.is_subtitle_conversion_required(subtitle):
                 output_file = tempfile.NamedTemporaryFile()
                 output_subtitle = output_file.name + ".srt"
+                encoding = utils.file_encoding(subtitle)
 
-                status = subprocess.run(["ffmpeg", "-i", subtitle, output_subtitle], capture_output = True)
+                status = subprocess.run(["ffmpeg", "-sub_charenc", encoding, "-i", subtitle, output_subtitle], capture_output = True)
 
                 output_file.close()
 
