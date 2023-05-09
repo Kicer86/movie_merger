@@ -65,7 +65,7 @@ class TwoTone:
         converted_subtitle = subtitle
 
         if self.dry_run == False:
-            if subtitle[-4:] == ".txt":
+            if utils.is_subtitle_conversion_required(subtitle):
                 output_file = tempfile.NamedTemporaryFile()
                 output_subtitle = output_file.name + ".srt"
 

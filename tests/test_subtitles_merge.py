@@ -3,6 +3,7 @@ import sys
 sys.path.append("..")
 
 import hashlib
+import os.path
 import subprocess
 import unittest
 
@@ -27,7 +28,7 @@ def hashes(path: str) -> [()]:
     return results
 
 
-class SimpleSubtitlesMerge(unittest.TestCase):
+class SubtitlesMerge(unittest.TestCase):
 
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
@@ -151,6 +152,25 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             twotone.run([td.path])
 
             # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitles"]), 1)
+
+    def test_invalid_subtitle_extension(self):
+        with TestDataWorkingDirectory() as td:
+            add_test_media("Frog.*mp4", td.path)
+
+            with open(os.path.join(td.path, "Frog.srt"), "w") as sf:
+                sf.write("00:00:00:Hello World\n")
+                sf.write("00:00:06:This is some sample subtitle in english\n")
+
+            twotone.run([td.path])
+
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
 

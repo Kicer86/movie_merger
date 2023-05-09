@@ -1,6 +1,7 @@
 
 import cchardet
 import magic
+import os.path
 import re
 from pathlib import Path
 
@@ -29,13 +30,16 @@ def is_video(file: str, use_mime: bool) -> bool:
     else:
         return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov"]
 
-
 def is_subtitle(file: str) -> bool:
     ext = file[-4:]
 
-    if ext == ".srt" or ext == ".sub":
-        return True
-    elif ext == ".txt":
+    if ext == ".srt" or ext == ".sub" or ext == ".txt":
+        file = os.path.realpath(file)
+        mime = magic.from_file(file, mime=True)
+
+        if mime == "application/x-subrip":
+            return True
+
         encoding = file_encoding(file)
 
         with open(file, 'r', encoding = encoding) as text_file:
@@ -45,3 +49,9 @@ def is_subtitle(file: str) -> bool:
                 return True
 
     return False
+
+def is_subtitle_conversion_required(path: str) -> bool:
+    path = os.path.realpath(path)
+    mime = magic.from_file(path, mime=True)
+
+    return mime == "text/plain"
