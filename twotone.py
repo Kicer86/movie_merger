@@ -13,8 +13,7 @@ import utils
 
 class TwoTone:
 
-    def __init__(self, use_mime: bool, dry_run: bool, language: str, disable_txt: bool):
-        self.use_mime = use_mime
+    def __init__(self, dry_run: bool, language: str, disable_txt: bool):
         self.dry_run = dry_run
         self.language = language
         self.disable_txt = disable_txt
@@ -146,7 +145,7 @@ class TwoTone:
     def process_dir(self, path: str):
         video_files = []
         for entry in os.scandir(path):
-            if entry.is_file() and utils.is_video(entry.path, self.use_mime):
+            if entry.is_file() and utils.is_video(entry.path):
                 video_files.append(entry.path)
             elif entry.is_dir():
                 self.process_dir(entry.path)
@@ -159,10 +158,6 @@ class TwoTone:
 
 def run(sys_args: [str]):
     parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file.')
-    parser.add_argument('--analyze-mime',
-                        action = 'store_true',
-                        default = False,
-                        help = 'Use file mime type instead of file extension for video files recognition. It is slower but more accurate.')
     parser.add_argument('videos_path',
                         nargs = 1,
                         help = 'Path with videos to combine.')
@@ -179,8 +174,7 @@ def run(sys_args: [str]):
 
     args = parser.parse_args(sys_args)
 
-    two_tone = TwoTone(use_mime = args.analyze_mime,
-                       dry_run = args.dry_run,
+    two_tone = TwoTone(dry_run = args.dry_run,
                        language = args.language,
                        disable_txt = args.disable_txt)
     two_tone.process_dir(args.videos_path[0])
