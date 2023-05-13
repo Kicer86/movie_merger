@@ -3,6 +3,7 @@ import argparse
 import langid
 import logging
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,7 @@ import utils
 
 
 Subtitle = namedtuple("Subtitle", "path language encoding")
+work = True
 
 
 class TwoTone:
@@ -162,6 +164,10 @@ class TwoTone:
             self._merge(video_file, subtitles)
 
     def process_dir(self, path: str):
+        global work
+        if not work:
+            return
+
         video_files = []
         for entry in os.scandir(path):
             if entry.is_file() and utils.is_video(entry.path):
@@ -176,7 +182,8 @@ class TwoTone:
                 self._process_video(video_file, self._simple_subtitle_search)
 
 def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run before running as ALL source files will be deleted.')
+    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run before running as ALL source files will be deleted. ' \
+        'It is safe to stop this script with ctrl+c - it will quit gracefully in a while.')
     parser.add_argument('videos_path',
                         nargs = 1,
                         help = 'Path with videos to combine.')
@@ -199,7 +206,15 @@ def run(sys_args: [str]):
     two_tone.process_dir(args.videos_path[0])
 
 
+
+def term_handler(signum, frame):
+    global work
+    logging.warning("SIGTERM received, stopping soon")
+    work = False
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, term_handler)
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     logging.info("Searching for movie and subtitle files to be merged")
     try:
@@ -208,4 +223,7 @@ if __name__ == '__main__':
         logging.error(f"Unexpected error occured: {e}. Terminating")
         exit(1)
 
-    logging.info("Done")
+    if work:
+        logging.info("Done")
+    else:
+        logging.warning("Quitted due to SIGTERM")
