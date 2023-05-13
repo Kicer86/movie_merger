@@ -17,10 +17,9 @@ Subtitle = namedtuple("Subtitle", "path language encoding")
 
 class TwoTone:
 
-    def __init__(self, dry_run: bool, language: str, disable_txt: bool, lang_priority: str):
+    def __init__(self, dry_run: bool, language: str, lang_priority: str):
         self.dry_run = dry_run
         self.language = language
-        self.disable_txt = disable_txt
         self.to_be_removed = []
         self.lang_priority = [] if not lang_priority or lang_priority == "" else lang_priority.split(",")
 
@@ -68,11 +67,6 @@ class TwoTone:
                 subtitles.append(subtitle)
 
         return list(set(subtitles))
-
-    # TODO: refactor!
-    def _filter_subtitles(self, subtitles: [Subtitle]) -> [Subtitle]:
-        # mkvmerge does not support txt subtitles, so drop them
-        return [subtitle for subtitle in subtitles if subtitle.path[-4:] != ".txt" or self.disable_txt == False]
 
     def _get_index_for(self, l: [], value):
         try:
@@ -163,10 +157,9 @@ class TwoTone:
             os.rename(tmp_video, output_video)
 
     def _process_video(self, video_file: str, subtitles_fetcher):
-        all_subtitles = subtitles_fetcher(video_file)
-        filtered_subtitles = self._filter_subtitles(all_subtitles)
-        if filtered_subtitles:
-            self._merge(video_file, filtered_subtitles)
+        subtitles = subtitles_fetcher(video_file)
+        if subtitles:
+            self._merge(video_file, subtitles)
 
     def process_dir(self, path: str):
         video_files = []
@@ -183,7 +176,7 @@ class TwoTone:
                 self._process_video(video_file, self._simple_subtitle_search)
 
 def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file.')
+    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run before running as ALL source files will be deleted.')
     parser.add_argument('videos_path',
                         nargs = 1,
                         help = 'Path with videos to combine.')
@@ -193,10 +186,6 @@ def run(sys_args: [str]):
                         help = 'No not modify any file, just print what will happen.')
     parser.add_argument("--language", "-l",
                         help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages. For automatic detection use: auto')
-    parser.add_argument("--disable-txt", "-t",
-                        action = 'store_true',
-                        default = False,
-                        help = 'Disable automatic conversion txt subtitles to srt ones (txt subtitles will be ignored as mkvmerge does not understand them).')
     parser.add_argument("--languages-priority", "-p",
                         help = 'Comma separated list of two letter language codes. Order on the list defines order of subtitles appending.\nFor example, for --languages-priority pl,de,en,fr all '\
                                'found subtitles will be ordered so polish goes as first, then german, english and french. If there are subtitles in any other language, they will be append at '\
@@ -206,7 +195,6 @@ def run(sys_args: [str]):
 
     two_tone = TwoTone(dry_run = args.dry_run,
                        language = args.language,
-                       disable_txt = args.disable_txt,
                        lang_priority = args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
 
