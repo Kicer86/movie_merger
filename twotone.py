@@ -6,18 +6,23 @@ import os
 import subprocess
 import sys
 import tempfile
+from collections import namedtuple
 from pathlib import Path
 
 import utils
 
 
+Subtitle = namedtuple("Subtitle", "path language encoding")
+
+
 class TwoTone:
 
-    def __init__(self, dry_run: bool, language: str, disable_txt: bool):
+    def __init__(self, dry_run: bool, language: str, disable_txt: bool, lang_priority: str):
         self.dry_run = dry_run
         self.language = language
         self.disable_txt = disable_txt
         self.to_be_removed = []
+        self.lang_priority = lang_priority
 
     def _remove_later(self, path: str):
         self.to_be_removed.append(path)
@@ -32,7 +37,13 @@ class TwoTone:
 
         return str(info.parent), info.stem, info.suffix[1:]
 
-    def _simple_subtitle_search(self, path: str) -> [str]:
+    def _build_subtitle_from_path(self, path: str) -> Subtitle:
+        encoding = utils.file_encoding(path)
+        language = self.language if self.language != "auto" else self._guess_language(path, encoding)
+
+        return Subtitle(path, language, encoding)
+
+    def _simple_subtitle_search(self, path: str) ->[Subtitle]:
         video_name = Path(path).stem
         dir = Path(path).parent
 
@@ -42,48 +53,48 @@ class TwoTone:
             subtitle_file = video_name + "." + subtitle_ext
             subtitle_path = os.path.join(dir, subtitle_file)
             if os.path.exists(subtitle_path) and utils.is_subtitle(subtitle_path):
-                subtitles.append(subtitle_path)
+                subtitle = self._build_subtitle_from_path(subtitle_path)
+                subtitles.append(subtitle)
 
         return subtitles
 
-    def _aggressive_subtitle_search(self, path: str) -> [str]:
+    def _aggressive_subtitle_search(self, path: str) -> [Subtitle]:
         subtitles = self._simple_subtitle_search(path)
         dir = Path(path).parent
 
         for entry in os.scandir(dir):
             if entry.is_file() and utils.is_subtitle(entry.path):
-                subtitles.append(entry.path)
+                subtitle = self._build_subtitle_from_path(entry.path)
+                subtitles.append(subtitle)
 
         return list(set(subtitles))
 
-    def _filter_subtitles(self, subtitles: [str]) -> [str]:
+    # TODO: refactor!
+    def _filter_subtitles(self, subtitles: [Subtitle]) -> [Subtitle]:
         # mkvmerge does not support txt subtitles, so drop them
-        return [subtitle for subtitle in subtitles if subtitle[-4:] != ".txt" or self.disable_txt == False]
+        return [subtitle for subtitle in subtitles if subtitle.path[-4:] != ".txt" or self.disable_txt == False]
 
-    def _convert_subtitle_if_needed(self, subtitle: str) -> [str]:
+    def _convert_subtitle_if_needed(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 
         if self.dry_run == False:
-            if utils.is_subtitle_conversion_required(subtitle):
+            if utils.is_subtitle_conversion_required(subtitle.path):
                 output_file = tempfile.NamedTemporaryFile()
                 output_subtitle = output_file.name + ".srt"
-                encoding = utils.file_encoding(subtitle)
 
-                status = subprocess.run(["ffmpeg", "-sub_charenc", encoding, "-i", subtitle, output_subtitle], capture_output = True)
+                status = subprocess.run(["ffmpeg", "-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle], capture_output = True)
 
                 output_file.close()
 
                 if status.returncode != 0:
                     raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr}")
 
-                converted_subtitle = output_subtitle
+                converted_subtitle = Subtitle(output_subtitle, subtitle.language, subtitle.encoding)
 
         return converted_subtitle
 
-    def _guess_language(self, path: str) -> str:
+    def _guess_language(self, path: str, encoding: str) -> str:
         result = ""
-
-        encoding = utils.file_encoding(path)
 
         with open(path, "r", encoding = encoding) as sf:
             content = sf.readlines()
@@ -115,19 +126,17 @@ class TwoTone:
         self._remove_later(input_video)
 
         for subtitle in subtitles:
-            lang = ""
-            if self.language:
-                lang = self.language if self.language != "auto" else self._guess_language(subtitle)
-
+            lang = subtitle.language
+            if lang and lang != "":
                 options.append("--language")
                 options.append("0:" + lang)
 
             converted_subtitle = self._convert_subtitle_if_needed(subtitle)
-            self._remove_later(converted_subtitle)
-            if converted_subtitle != subtitle:
-                self._remove_later(subtitle)
+            self._remove_later(converted_subtitle.path)
+            if converted_subtitle.path != subtitle.path:
+                self._remove_later(subtitle.path)
 
-            options.append(converted_subtitle)
+            options.append(converted_subtitle.path)
 
             logging.info(f"\tadd subtitles [{lang}]: {subtitle}")
 
@@ -172,12 +181,17 @@ def run(sys_args: [str]):
                         action = 'store_true',
                         default = False,
                         help = 'Disable automatic conversion txt subtitles to srt ones (txt subtitles will be ignored as mkvmerge does not understand them).')
+    parser.add_argument("--languages-priority", "-p",
+                        help = 'Comma separated list of two letter language codes. Order on the list defines order of subtitles appending.\nFor example, for --languages-priority pl,de,en,fr all '\
+                               'found subtitles will be ordered so polish goes as first, then german, english and french. If there are subtitles in any other language, they will be append at '\
+                               'the end in undefined order')
 
     args = parser.parse_args(sys_args)
 
     two_tone = TwoTone(dry_run = args.dry_run,
                        language = args.language,
-                       disable_txt = args.disable_txt)
+                       disable_txt = args.disable_txt,
+                       lang_priority = args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
 
 
