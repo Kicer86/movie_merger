@@ -83,7 +83,6 @@ class TwoTone:
 
         return subtitles_sorted
 
-
     def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 

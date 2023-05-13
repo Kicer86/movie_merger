@@ -20,11 +20,16 @@ def file_encoding(file: str) -> str:
         detector.close()
 
     encoding = detector.result["encoding"]
+
+    if encoding == "UTF-8-SIG":
+        encoding = "UTF-8"
+
     return encoding
 
 
 def is_video(file: str) -> bool:
     return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov"]
+
 
 def is_subtitle(file: str) -> bool:
     ext = file[-4:]
