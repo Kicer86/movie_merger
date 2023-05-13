@@ -84,22 +84,21 @@ class TwoTone:
         return subtitles_sorted
 
 
-    def _convert_subtitle_if_needed(self, subtitle: Subtitle) -> [Subtitle]:
+    def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 
         if self.dry_run == False:
-            if utils.is_subtitle_conversion_required(subtitle.path):
-                output_file = tempfile.NamedTemporaryFile()
-                output_subtitle = output_file.name + ".srt"
+            output_file = tempfile.NamedTemporaryFile()
+            output_subtitle = output_file.name + ".srt"
 
-                status = subprocess.run(["ffmpeg", "-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle], capture_output = True)
+            status = subprocess.run(["ffmpeg", "-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle], capture_output = True)
 
-                output_file.close()
+            output_file.close()
 
-                if status.returncode != 0:
-                    raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr}")
+            if status.returncode != 0:
+                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
-                converted_subtitle = Subtitle(output_subtitle, subtitle.language, subtitle.encoding)
+            converted_subtitle = Subtitle(output_subtitle, subtitle.language, subtitle.encoding)
 
         return converted_subtitle
 
@@ -143,7 +142,7 @@ class TwoTone:
                 options.append("--language")
                 options.append("0:" + lang)
 
-            converted_subtitle = self._convert_subtitle_if_needed(subtitle)
+            converted_subtitle = self._convert_subtitle(subtitle)       # subtitles are buggy sometimes, ffmpeg fixes them
             self._remove_later(converted_subtitle.path)
             if converted_subtitle.path != subtitle.path:
                 self._remove_later(subtitle.path)

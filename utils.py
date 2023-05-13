@@ -45,9 +45,3 @@ def is_subtitle(file: str) -> bool:
                 return True
 
     return False
-
-def is_subtitle_conversion_required(path: str) -> bool:
-    path = os.path.realpath(path)
-    mime = magic.from_file(path, mime=True)
-
-    return mime == "text/plain"
