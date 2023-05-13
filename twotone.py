@@ -212,14 +212,14 @@ def run(sys_args: [str]):
 
 
 
-def term_handler(signum, frame):
+def sig_handler(signum, frame):
     global work
-    logging.warning("SIGTERM received, stopping soon")
+    logging.warning("SIGINT received, stopping soon")
     work = False
 
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, term_handler)
+    signal.signal(signal.SIGINT, sig_handler)
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     logging.info("Searching for movie and subtitle files to be merged")
     try:
@@ -231,4 +231,4 @@ if __name__ == '__main__':
     if work:
         logging.info("Done")
     else:
-        logging.warning("Quitted due to SIGTERM")
+        logging.warning("Quitted due to SIGINT")
