@@ -22,7 +22,7 @@ class TwoTone:
         self.language = language
         self.disable_txt = disable_txt
         self.to_be_removed = []
-        self.lang_priority = lang_priority
+        self.lang_priority = [] if not lang_priority or lang_priority == "" else lang_priority.split(",")
 
     def _remove_later(self, path: str):
         self.to_be_removed.append(path)
@@ -73,6 +73,20 @@ class TwoTone:
     def _filter_subtitles(self, subtitles: [Subtitle]) -> [Subtitle]:
         # mkvmerge does not support txt subtitles, so drop them
         return [subtitle for subtitle in subtitles if subtitle.path[-4:] != ".txt" or self.disable_txt == False]
+
+    def _get_index_for(self, l: [], value):
+        try:
+            return l.index(value)
+        except ValueError:
+            return len(l)
+
+    def _sort_subtitles(self, subtitles: [Subtitle]) -> [Subtitle]:
+        priorities = self.lang_priority.copy()
+        priorities.append(None)
+        subtitles_sorted = sorted(subtitles, key = lambda s: self._get_index_for(priorities, s.language))
+
+        return subtitles_sorted
+
 
     def _convert_subtitle_if_needed(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
@@ -125,7 +139,9 @@ class TwoTone:
 
         self._remove_later(input_video)
 
-        for subtitle in subtitles:
+        sorted_subtitles = self._sort_subtitles(subtitles)
+
+        for subtitle in sorted_subtitles:
             lang = subtitle.language
             if lang and lang != "":
                 options.append("--language")
