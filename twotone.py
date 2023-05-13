@@ -119,10 +119,10 @@ class TwoTone:
             process.extend(options)
             result = subprocess.run(process, capture_output = True)
 
-            logging.debug(result.stdout)
+            logging.debug(result.stdout.decode("utf-8") )
 
             if result.returncode != 0:
-                raise RuntimeError(f"mkvmerge exited with unexpected error:\n{result.stdout}")
+                raise RuntimeError(f"mkvmerge exited with unexpected error:\n{result.stdout.decode('utf-8')}")
 
     def _merge(self, input_video: str, subtitles: [str]):
         logging.info(f"Video file: {input_video}")
@@ -150,8 +150,10 @@ class TwoTone:
 
             options.append(converted_subtitle.path)
 
-            logging.info(f"\tadd subtitles [{lang}]: {subtitle}")
+            logging.info(f"\tadd subtitles [{lang}]: {subtitle.path}")
 
+        logging.debug(f"\tStarting mkvmerge with options:{options}")
+        logging.info("\tMerge in progress...")
         self._run_mkvmerge(options)
 
         if not self.dry_run and os.path.exists(tmp_video):
@@ -181,6 +183,7 @@ class TwoTone:
             for video_file in video_files:
                 self._process_video(video_file, self._simple_subtitle_search)
 
+
 def run(sys_args: [str]):
     parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run before running as ALL source files will be deleted. ' \
         'It is safe to stop this script with ctrl+c - it will quit gracefully in a while.')
@@ -197,8 +200,12 @@ def run(sys_args: [str]):
                         help = 'Comma separated list of two letter language codes. Order on the list defines order of subtitles appending.\nFor example, for --languages-priority pl,de,en,fr all '\
                                'found subtitles will be ordered so polish goes as first, then german, english and french. If there are subtitles in any other language, they will be append at '\
                                'the end in undefined order')
+    parser.add_argument("--verbose", action = 'store_true', default = False, help = 'Verbose output')
 
     args = parser.parse_args(sys_args)
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     two_tone = TwoTone(dry_run = args.dry_run,
                        language = args.language,
