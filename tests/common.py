@@ -33,19 +33,26 @@ class TestDataWorkingDirectory:
 
 
 def file_tracks(path: str) -> ():
-    tracks= {}
+    streams = {}
 
-    process = subprocess.run(["mkvmerge", "-J", path], env={"LC_ALL": "C"}, capture_output=True)
+    command = ["ffprobe"]
+    command.extend(["-v", "quiet"])
+    command.extend(["-print_format", "json"])
+    command.append("-show_format")
+    command.append("-show_streams")
+    command.append(path)
+
+    process = subprocess.run(command, env={"LC_ALL": "C"}, capture_output=True)
 
     output_lines = process.stdout
     output_str = output_lines.decode('utf8')
     output_json = json.loads(output_lines)
 
-    for track in output_json["tracks"]:
-        type = track["type"]
-        tracks.setdefault(type, []).append(track)
+    for stream in output_json["streams"]:
+        type = stream["codec_type"]
+        streams.setdefault(type, []).append(stream)
 
-    return tracks
+    return streams
 
 
 def list_files(path: str) -> []:

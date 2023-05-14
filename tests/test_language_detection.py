@@ -28,8 +28,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "eng")
+            self.assertEqual(len(tracks["subtitle"]), 1)
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "en")
 
     def test_polish_recognition(self):
         with TestDataWorkingDirectory() as td:
@@ -48,8 +48,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "pol")
+            self.assertEqual(len(tracks["subtitle"]), 1)
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "pl")
 
     def test_language_priority(self):
         with TestDataWorkingDirectory() as td:
@@ -81,9 +81,9 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             video = files_after[0]
             tracks = file_tracks(video)
-            self.assertEqual(len(tracks["subtitles"]), 5)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "ger")
-            self.assertEqual(tracks["subtitles"][1]["properties"]["language"], "cze")
+            self.assertEqual(len(tracks["subtitle"]), 5)
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "de")
+            self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "cs")
 
 
 if __name__ == '__main__':

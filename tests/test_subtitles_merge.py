@@ -68,7 +68,7 @@ class SubtitlesMerge(unittest.TestCase):
                 self.assertEqual(video[-4:], ".mkv")
                 tracks = file_tracks(video)
                 self.assertEqual(len(tracks["video"]), 1)
-                self.assertEqual(len(tracks["subtitles"]), 1)
+                self.assertEqual(len(tracks["subtitle"]), 1)
 
     def test_appending_subtitles_to_mkv_with_subtitles(self):
         with TestDataWorkingDirectory() as td:
@@ -91,7 +91,7 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 2)
+            self.assertEqual(len(tracks["subtitle"]), 2)
 
     def test_subtitles_language(self):
         with TestDataWorkingDirectory() as td:
@@ -109,8 +109,8 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "pol")
+            self.assertEqual(len(tracks["subtitle"]), 1)
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "pol")
 
     def test_multiple_subtitles_for_single_file(self):
         with TestDataWorkingDirectory() as td:
@@ -129,7 +129,7 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 3)
+            self.assertEqual(len(tracks["subtitle"]), 3)
 
     def test_raw_txt_subtitles_conversion(self):
         # Allow automatic txt to srt conversion
@@ -146,7 +146,7 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
+            self.assertEqual(len(tracks["subtitle"]), 1)
 
     def test_invalid_subtitle_extension(self):
         with TestDataWorkingDirectory() as td:
@@ -169,7 +169,7 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(video[-4:], ".mkv")
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 2)
+            self.assertEqual(len(tracks["subtitle"]), 2)
 
 
 if __name__ == '__main__':
