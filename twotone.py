@@ -83,6 +83,19 @@ class TwoTone:
 
         return subtitles_sorted
 
+    def _start_process(self, process: str, args: [str]):
+        command = [process]
+        command.extend(args)
+
+        logging.debug(f"Starting {process} with options: {' '.join(args)}")
+        status = subprocess.run(command, capture_output = True)
+        logging.debug(f"Process finished with {status.returncode}")
+
+        if status.returncode != 0:
+            raise RuntimeError(f"{process} exited with unexpected error:\n{status.stderr.decode('utf-8')}")
+
+        return status
+
     def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 
@@ -90,7 +103,7 @@ class TwoTone:
             output_file = tempfile.NamedTemporaryFile()
             output_subtitle = output_file.name + ".srt"
 
-            status = subprocess.run(["ffmpeg", "-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle], capture_output = True)
+            status = self._start_process("ffmpeg", ["-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle])
 
             output_file.close()
 
@@ -113,11 +126,7 @@ class TwoTone:
 
     def _run_mkvmerge(self, options: [str]):
         if not self.dry_run:
-            process = ["mkvmerge"]
-            process.extend(options)
-            result = subprocess.run(process, capture_output = True)
-
-            logging.debug(result.stdout.decode("utf-8") )
+            result = self._start_process("mkvmerge", options)
 
             if result.returncode != 0:
                 raise RuntimeError(f"mkvmerge exited with unexpected error:\n{result.stdout.decode('utf-8')}")
@@ -150,9 +159,9 @@ class TwoTone:
 
             logging.info(f"\tadd subtitles [{lang}]: {subtitle.path}")
 
-        logging.debug(f"\tStarting mkvmerge with options:{options}")
         logging.info("\tMerge in progress...")
         self._run_mkvmerge(options)
+        logging.info("\tDone")
 
         if not self.dry_run and os.path.exists(tmp_video):
             self._remove()
