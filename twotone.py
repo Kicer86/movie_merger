@@ -91,9 +91,6 @@ class TwoTone:
         status = subprocess.run(command, capture_output = True)
         logging.debug(f"Process finished with {status.returncode}")
 
-        if status.returncode != 0:
-            raise RuntimeError(f"{process} exited with unexpected error:\n{status.stderr.decode('utf-8')}")
-
         return status
 
     def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
@@ -110,7 +107,7 @@ class TwoTone:
             if status.returncode != 0:
                 raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
-            converted_subtitle = Subtitle(output_subtitle, subtitle.language, subtitle.encoding)
+            converted_subtitle = Subtitle(output_subtitle, subtitle.language, "utf-8")
 
         return converted_subtitle
 
@@ -124,13 +121,6 @@ class TwoTone:
 
         return result
 
-    def _run_mkvmerge(self, options: [str]):
-        if not self.dry_run:
-            result = self._start_process("mkvmerge", options)
-
-            if result.returncode != 0:
-                raise RuntimeError(f"mkvmerge exited with unexpected error:\n{result.stdout.decode('utf-8')}")
-
     def _merge(self, input_video: str, subtitles: [str]):
         logging.info(f"Video file: {input_video}")
 
@@ -138,34 +128,58 @@ class TwoTone:
         tmp_video = video_dir + "/." + video_name + "." + "mkv"
         output_video = video_dir + "/" + video_name + "." + "mkv"
 
-        options = ["-o", tmp_video, input_video]
+        # set inputs
+        options = ["-i", input_video]
 
         self._remove_later(input_video)
 
         sorted_subtitles = self._sort_subtitles(subtitles)
 
         for subtitle in sorted_subtitles:
+            logging.info(f"\tadd subtitles [{subtitle.language}]: {subtitle.path}")
+            self._remove_later(subtitle.path)
+
+            converted_subtitle = self._convert_subtitle(subtitle)       # subtitles are buggy sometimes, use ffmpeg to fix them
+            self._remove_later(converted_subtitle.path)
+
+            options.extend(["-i", converted_subtitle.path])
+
+        # define stream types
+        options.extend(["-map", "0:v"])
+        options.extend(["-map", "0:a?"])
+        options.extend(["-map", "0:s?"])
+
+        for index in range(len(sorted_subtitles)):
+            options.extend([f"-map", f"{index + 1}:s"])
+
+        # codec - copy
+        options.extend(["-c", "copy"])
+
+        # set languages
+        for index in range(len(sorted_subtitles)):
+            subtitle = sorted_subtitles[index]
             lang = subtitle.language
             if lang and lang != "":
-                options.append("--language")
-                options.append("0:" + lang)
+                options.extend([f"-metadata:s:s:{index}", f"language={lang}"])
 
-            converted_subtitle = self._convert_subtitle(subtitle)       # subtitles are buggy sometimes, ffmpeg fixes them
-            self._remove_later(converted_subtitle.path)
-            if converted_subtitle.path != subtitle.path:
-                self._remove_later(subtitle.path)
+        # output
+        options.append(tmp_video)
 
-            options.append(converted_subtitle.path)
-
-            logging.info(f"\tadd subtitles [{lang}]: {subtitle.path}")
-
+        # perform
         logging.info("\tMerge in progress...")
-        self._run_mkvmerge(options)
-        logging.info("\tDone")
+        if not self.dry_run:
+            result = self._start_process("ffmpeg", options)
 
-        if not self.dry_run and os.path.exists(tmp_video):
-            self._remove()
-            os.rename(tmp_video, output_video)
+            if result.returncode != 0:
+                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{result.stderr.decode('utf-8')}")
+
+            if os.path.exists(tmp_video):
+                self._remove()
+                os.rename(tmp_video, output_video)
+            else:
+                logging.error("Output file was not created")
+
+        logging.info("\tDone")
 
     def _process_video(self, video_file: str, subtitles_fetcher):
         subtitles = subtitles_fetcher(video_file)
