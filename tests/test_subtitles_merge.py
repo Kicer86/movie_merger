@@ -171,6 +171,49 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitle"]), 2)
 
+    def test_multilevel_structure(self):
+        with TestDataWorkingDirectory() as td:
+            add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
+            add_test_media("sea-waves-crashing-on-beach-shore.*srt", td.path, ["PL", "EN"])
+
+            subdir = os.path.join(td.path, "subdir")
+            os.mkdir(subdir)
+
+            add_test_media("Grass.*mp4", subdir)
+            add_test_media("Grass.*srt", subdir, ["PL", "EN"])
+
+            twotone.run([td.path])
+
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 2)
+
+            for video in files_after:
+                self.assertEqual(video[-4:], ".mkv")
+                tracks = file_tracks(video)
+                self.assertEqual(len(tracks["video"]), 1)
+                self.assertEqual(len(tracks["subtitle"]), 2)
+
+    def test_subtitles_in_subdirectory(self):
+        with TestDataWorkingDirectory() as td:
+            add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
+            add_test_media("sea-waves-crashing-on-beach-shore.*srt", td.path, ["PL", "EN"])
+
+            subdir = os.path.join(td.path, "subdir")
+            os.mkdir(subdir)
+
+            add_test_media("sea-waves-crashing-on-beach-shore.*srt", subdir, ["DE", "CS"])
+
+            twotone.run([td.path])
+
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitle"]), 4)
+
 
 if __name__ == '__main__':
     unittest.main()

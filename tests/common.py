@@ -58,11 +58,12 @@ def file_tracks(path: str) -> ():
 def list_files(path: str) -> []:
     results = []
 
-    for filename in os.listdir(path):
-        filepath = os.path.join(path, filename)
+    for root, _, files in os.walk(path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
 
-        if os.path.isfile(filepath):
-            results.append(filepath)
+            if os.path.isfile(filepath):
+                results.append(filepath)
 
     return results
 

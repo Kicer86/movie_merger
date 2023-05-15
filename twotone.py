@@ -59,12 +59,39 @@ class TwoTone:
 
         return subtitles
 
+    def _recursive_subtitle_search(self, path: str) -> [Subtitle]:
+        found_subtitles = []
+        found_subdirs = []
+
+        with os.scandir(path) as it:
+            for entry in it:
+                if entry.is_dir():
+                    found_subdirs.append(entry.path)
+                elif entry.is_file():
+                    if utils.is_video(entry.path):
+                        # if there is a video file then all possible subtitles at this level (and below) belong to it, quit recursion for current directory
+                        return []
+                    elif utils.is_subtitle(entry.path):
+                        found_subtitles.append(entry.path)
+
+        # if we got here, then no video was found at this level
+        subtitles = [self._build_subtitle_from_path(subtitle) for subtitle in found_subtitles]
+
+        for subdir in found_subdirs:
+            sub_subtitles = self._recursive_subtitle_search(subdir)
+            subtitles.extend(subtitles)
+
+        return subtitles
+
     def _aggressive_subtitle_search(self, path: str) -> [Subtitle]:
         subtitles = self._simple_subtitle_search(path)
         dir = Path(path).parent
 
         for entry in os.scandir(dir):
-            if entry.is_file() and utils.is_subtitle(entry.path):
+            if entry.is_dir():
+                sub_subtitles = self._recursive_subtitle_search(entry.path)
+                subtitles.extend(sub_subtitles)
+            elif entry.is_file() and utils.is_subtitle(entry.path):
                 subtitle = self._build_subtitle_from_path(entry.path)
                 subtitles.append(subtitle)
 
@@ -200,7 +227,7 @@ class TwoTone:
 
         if len(video_files) == 1:
             self._process_video(video_files[0], self._aggressive_subtitle_search)
-        if len(video_files) > 1:
+        elif len(video_files) > 1:
             for video_file in video_files:
                 self._process_video(video_file, self._simple_subtitle_search)
 
