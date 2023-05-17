@@ -183,11 +183,13 @@ class TwoTone:
         options.extend(["-c", "copy"])
 
         # set languages
+        video_info = utils.get_video_data(input_video)
+        existing_subtitles_count = len(video_info.subtitles)
         for index in range(len(sorted_subtitles)):
             subtitle = sorted_subtitles[index]
             lang = subtitle.language
             if lang and lang != "":
-                options.extend([f"-metadata:s:s:{index}", f"language={lang}"])
+                options.extend([f"-metadata:s:s:{index + existing_subtitles_count}", f"language={lang}"])
 
         # output
         options.append(tmp_video)

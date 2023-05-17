@@ -214,6 +214,31 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitle"]), 4)
 
+    def test_appending_subtitles_to_mkv_with_subtitles(self):
+        with TestDataWorkingDirectory() as td:
+
+            # combine mp4 with srt into mkv
+            add_test_media("fog-over-mountainside.*(mp4|srt)", td.path)
+
+            twotone.run([td.path, "-l", "de"])
+
+            # combine mkv with srt into mkv with 2 subtitles
+            add_test_media("fog-over-mountainside.*srt", td.path)
+
+            twotone.run([td.path, "-l", "pl"])
+
+            # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 1)
+
+            video = files_after[0]
+            self.assertEqual(video[-4:], ".mkv")
+            tracks = file_tracks(video)
+            self.assertEqual(len(tracks["video"]), 1)
+            self.assertEqual(len(tracks["subtitle"]), 2)
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "de")
+            self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "pl")
+
 
 if __name__ == '__main__':
     unittest.main()

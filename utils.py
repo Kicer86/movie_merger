@@ -1,10 +1,15 @@
 
 import cchardet
+import json
 import magic
 import os.path
 import re
+import subprocess
+from collections import namedtuple
 from pathlib import Path
 
+Subtitle = namedtuple("Subtitle", "language")
+VideoInfo = namedtuple("VideoInfo", "subtitles")
 txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 txt_format2 = re.compile("\{[0-9]+\}\{[0-9]+\}.*")
 
@@ -50,3 +55,25 @@ def is_subtitle(file: str) -> bool:
                 return True
 
     return False
+
+def get_video_data(path: str) -> [VideoInfo]:
+    command = ["ffprobe"]
+    command.extend(["-v", "quiet"])
+    command.extend(["-print_format", "json"])
+    command.append("-show_format")
+    command.append("-show_streams")
+    command.append(path)
+
+    process = subprocess.run(command, env={"LC_ALL": "C"}, capture_output=True)
+
+    output_lines = process.stdout
+    output_str = output_lines.decode('utf8')
+    output_json = json.loads(output_lines)
+
+    subtitles = []
+    for stream in output_json["streams"]:
+        type = stream["codec_type"]
+        if type == "subtitle":
+            subtitles.append(Subtitle(stream["tags"]["language"]))
+
+    return VideoInfo(subtitles)
