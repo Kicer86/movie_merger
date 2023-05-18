@@ -12,7 +12,7 @@ from pathlib import Path
 Subtitle = namedtuple("Subtitle", "language")
 VideoInfo = namedtuple("VideoInfo", "subtitles")
 txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
-txt_format2 = re.compile("\{[0-9]+\}\{[0-9]+\}.*")
+txt_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 
 
 def start_process(process: str, args: [str]):
