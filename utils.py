@@ -11,19 +11,22 @@ from pathlib import Path
 
 Subtitle = namedtuple("Subtitle", "language")
 VideoInfo = namedtuple("VideoInfo", "subtitles")
+ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 txt_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 
 
-def start_process(process: str, args: [str]):
+def start_process(process: str, args: [str]) -> ProcessResult:
     command = [process]
     command.extend(args)
 
     logging.debug(f"Starting {process} with options: {' '.join(args)}")
-    status = subprocess.run(command, capture_output = True)
-    logging.debug(f"Process finished with {status.returncode}")
+    sub_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    stdout, stderr = sub_process.communicate()
 
-    return status
+    logging.debug(f"Process finished with {sub_process.returncode}")
+
+    return ProcessResult(sub_process.returncode, stdout, stderr)
 
 
 def file_encoding(file: str) -> str:
