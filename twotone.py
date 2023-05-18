@@ -1,4 +1,3 @@
-
 import argparse
 import langid
 import logging
@@ -11,7 +10,6 @@ from collections import namedtuple
 from pathlib import Path
 
 import utils
-
 
 Subtitle = namedtuple("Subtitle", "path language encoding")
 work = True
@@ -33,7 +31,8 @@ class TwoTone:
             os.remove(file_to_remove)
         self.to_be_removed.clear()
 
-    def _split_path(self, path: str) -> (str, str, str):
+    @staticmethod
+    def _split_path(path: str) -> (str, str, str):
         info = Path(path)
 
         return str(info.parent), info.stem, info.suffix[1:]
@@ -44,15 +43,15 @@ class TwoTone:
 
         return Subtitle(path, language, encoding)
 
-    def _simple_subtitle_search(self, path: str) ->[Subtitle]:
+    def _simple_subtitle_search(self, path: str) -> [Subtitle]:
         video_name = Path(path).stem
-        dir = Path(path).parent
+        directory = Path(path).parent
 
         subtitles = []
 
         for subtitle_ext in ["txt", "srt"]:
             subtitle_file = video_name + "." + subtitle_ext
-            subtitle_path = os.path.join(dir, subtitle_file)
+            subtitle_path = os.path.join(directory, subtitle_file)
             if os.path.exists(subtitle_path) and utils.is_subtitle(subtitle_path):
                 subtitle = self._build_subtitle_from_path(subtitle_path)
                 subtitles.append(subtitle)
@@ -69,7 +68,8 @@ class TwoTone:
                     found_subdirs.append(entry.path)
                 elif entry.is_file():
                     if utils.is_video(entry.path):
-                        # if there is a video file then all possible subtitles at this level (and below) belong to it, quit recursion for current directory
+                        # if there is a video file then all possible subtitles at this level (and below) belong to
+                        # it, quit recursion for current directory
                         return []
                     elif utils.is_subtitle(entry.path):
                         found_subtitles.append(entry.path)
@@ -85,9 +85,9 @@ class TwoTone:
 
     def _aggressive_subtitle_search(self, path: str) -> [Subtitle]:
         subtitles = self._simple_subtitle_search(path)
-        dir = Path(path).parent
+        directory = Path(path).parent
 
-        for entry in os.scandir(dir):
+        for entry in os.scandir(directory):
             if entry.is_dir():
                 sub_subtitles = self._recursive_subtitle_search(entry.path)
                 subtitles.extend(sub_subtitles)
@@ -97,7 +97,8 @@ class TwoTone:
 
         return list(set(subtitles))
 
-    def _get_index_for(self, l: [], value):
+    @staticmethod
+    def _get_index_for(l: [], value):
         try:
             return l.index(value)
         except ValueError:
@@ -106,18 +107,19 @@ class TwoTone:
     def _sort_subtitles(self, subtitles: [Subtitle]) -> [Subtitle]:
         priorities = self.lang_priority.copy()
         priorities.append(None)
-        subtitles_sorted = sorted(subtitles, key = lambda s: self._get_index_for(priorities, s.language))
+        subtitles_sorted = sorted(subtitles, key=lambda s: self._get_index_for(priorities, s.language))
 
         return subtitles_sorted
 
     def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 
-        if self.dry_run == False:
+        if not self.dry_run:
             output_file = tempfile.NamedTemporaryFile()
             output_subtitle = output_file.name + ".srt"
 
-            status = utils.start_process("ffmpeg", ["-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle])
+            status = utils.start_process("ffmpeg",
+                                         ["-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle])
 
             output_file.close()
 
@@ -128,10 +130,11 @@ class TwoTone:
 
         return converted_subtitle
 
-    def _guess_language(self, path: str, encoding: str) -> str:
+    @staticmethod
+    def _guess_language(path: str, encoding: str) -> str:
         result = ""
 
-        with open(path, "r", encoding = encoding) as sf:
+        with open(path, "r", encoding=encoding) as sf:
             content = sf.readlines()
             content_joined = "".join(content)
             result = langid.classify(content_joined)[0]
@@ -156,7 +159,8 @@ class TwoTone:
             logging.info(f"\tadd subtitles [{subtitle.language}]: {subtitle.path}")
             self._remove_later(subtitle.path)
 
-            converted_subtitle = self._convert_subtitle(subtitle)       # subtitles are buggy sometimes, use ffmpeg to fix them
+            # subtitles are buggy sometimes, use ffmpeg to fix them
+            converted_subtitle = self._convert_subtitle(subtitle)
             self._remove_later(converted_subtitle.path)
 
             options.extend(["-i", converted_subtitle.path])
@@ -225,33 +229,37 @@ class TwoTone:
 
 
 def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run before running as ALL source files will be deleted. ' \
-        'It is safe to stop this script with ctrl+c - it will quit gracefully in a while.')
+    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run '
+                                                 'before running as ALL source files will be deleted. '
+                                                 'It is safe to stop this script with ctrl+c - it will quit '
+                                                 'gracefully in a while.')
     parser.add_argument('videos_path',
-                        nargs = 1,
-                        help = 'Path with videos to combine.')
+                        nargs=1,
+                        help='Path with videos to combine.')
     parser.add_argument("--dry-run", "-n",
-                        action = 'store_true',
-                        default = False,
-                        help = 'No not modify any file, just print what will happen.')
+                        action='store_true',
+                        default=False,
+                        help='No not modify any file, just print what will happen.')
     parser.add_argument("--language", "-l",
-                        help = 'Language code for found subtitles. By default none is used. See mkvmerge --list-languages for available languages. For automatic detection use: auto')
+                        help='Language code for found subtitles. By default none is used. See mkvmerge '
+                             '--list-languages for available languages. For automatic detection use: auto')
     parser.add_argument("--languages-priority", "-p",
-                        help = 'Comma separated list of two letter language codes. Order on the list defines order of subtitles appending.\nFor example, for --languages-priority pl,de,en,fr all '\
-                               'found subtitles will be ordered so polish goes as first, then german, english and french. If there are subtitles in any other language, they will be append at '\
-                               'the end in undefined order')
-    parser.add_argument("--verbose", action = 'store_true', default = False, help = 'Verbose output')
+                        help='Comma separated list of two letter language codes. Order on the list defines order of '
+                             'subtitles appending.\nFor example, for --languages-priority pl,de,en,fr all '
+                             'found subtitles will be ordered so polish goes as first, then german, english and '
+                             'french. If there are subtitles in any other language, they will be append at '
+                             'the end in undefined order')
+    parser.add_argument("--verbose", action='store_true', default=False, help='Verbose output')
 
     args = parser.parse_args(sys_args)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    two_tone = TwoTone(dry_run = args.dry_run,
-                       language = args.language,
-                       lang_priority = args.languages_priority)
+    two_tone = TwoTone(dry_run=args.dry_run,
+                       language=args.language,
+                       lang_priority=args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
-
 
 
 def sig_handler(signum, frame):
@@ -267,10 +275,10 @@ if __name__ == '__main__':
     try:
         run(sys.argv[1:])
     except RuntimeError as e:
-        logging.error(f"Unexpected error occured: {e}. Terminating")
+        logging.error(f"Unexpected error occurred: {e}. Terminating")
         exit(1)
 
     if work:
         logging.info("Done")
     else:
-        logging.warning("Quitted due to SIGINT")
+        logging.warning("Quited due to SIGINT")

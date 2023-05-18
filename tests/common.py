@@ -77,7 +77,7 @@ def add_test_media(filter: str, test_case_path: str, suffixes: [str] = [None]):
                 file_path = file.name
                 if filter_regex.fullmatch(file_path):
                     for suffix in suffixes:
-                        suffix = "" if suffix == None else "-" + suffix + "-"
+                        suffix = "" if suffix is None else "-" + suffix + "-"
                         file_path = Path(file)
                         dst_file_name = file_path.stem + suffix + file_path.suffix
                         os.symlink(os.path.join(current_path, media, file_path),

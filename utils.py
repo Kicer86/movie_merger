@@ -25,6 +25,7 @@ def start_process(process: str, args: [str]):
 
     return status
 
+
 def file_encoding(file: str) -> str:
     detector = cchardet.UniversalDetector()
 
@@ -66,6 +67,7 @@ def is_subtitle(file: str) -> bool:
                 return True
 
     return False
+
 
 def get_video_data(path: str) -> [VideoInfo]:
     args = []
