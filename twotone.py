@@ -110,16 +110,6 @@ class TwoTone:
 
         return subtitles_sorted
 
-    def _start_process(self, process: str, args: [str]):
-        command = [process]
-        command.extend(args)
-
-        logging.debug(f"Starting {process} with options: {' '.join(args)}")
-        status = subprocess.run(command, capture_output = True)
-        logging.debug(f"Process finished with {status.returncode}")
-
-        return status
-
     def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 
@@ -127,7 +117,7 @@ class TwoTone:
             output_file = tempfile.NamedTemporaryFile()
             output_subtitle = output_file.name + ".srt"
 
-            status = self._start_process("ffmpeg", ["-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle])
+            status = utils.start_process("ffmpeg", ["-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle])
 
             output_file.close()
 
@@ -197,7 +187,7 @@ class TwoTone:
         # perform
         logging.info("\tMerge in progress...")
         if not self.dry_run:
-            result = self._start_process("ffmpeg", options)
+            result = utils.start_process("ffmpeg", options)
 
             if result.returncode != 0:
                 raise RuntimeError(f"ffmpeg exited with unexpected error:\n{result.stderr.decode('utf-8')}")

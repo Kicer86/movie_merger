@@ -1,6 +1,7 @@
 
 import cchardet
 import json
+import logging
 import magic
 import os.path
 import re
@@ -13,6 +14,16 @@ VideoInfo = namedtuple("VideoInfo", "subtitles")
 txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 txt_format2 = re.compile("\{[0-9]+\}\{[0-9]+\}.*")
 
+
+def start_process(process: str, args: [str]):
+    command = [process]
+    command.extend(args)
+
+    logging.debug(f"Starting {process} with options: {' '.join(args)}")
+    status = subprocess.run(command, capture_output = True)
+    logging.debug(f"Process finished with {status.returncode}")
+
+    return status
 
 def file_encoding(file: str) -> str:
     detector = cchardet.UniversalDetector()
@@ -57,14 +68,14 @@ def is_subtitle(file: str) -> bool:
     return False
 
 def get_video_data(path: str) -> [VideoInfo]:
-    command = ["ffprobe"]
-    command.extend(["-v", "quiet"])
-    command.extend(["-print_format", "json"])
-    command.append("-show_format")
-    command.append("-show_streams")
-    command.append(path)
+    args = []
+    args.extend(["-v", "quiet"])
+    args.extend(["-print_format", "json"])
+    args.append("-show_format")
+    args.append("-show_streams")
+    args.append(path)
 
-    process = subprocess.run(command, env={"LC_ALL": "C"}, capture_output=True)
+    process = start_process("ffprobe", args)
 
     output_lines = process.stdout
     output_str = output_lines.decode('utf8')
