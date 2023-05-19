@@ -49,6 +49,7 @@ def is_video(file: str) -> bool:
 
 
 def is_subtitle(file: str) -> bool:
+    logging.debug(f"Checking file {file} for being subtitle")
     ext = file[-4:]
 
     if ext == ".srt" or ext == ".sub" or ext == ".txt":
@@ -56,16 +57,22 @@ def is_subtitle(file: str) -> bool:
         mime = magic.from_file(file, mime=True)
 
         if mime == "application/x-subrip":
+            logging.debug("\tSubRip file")
             return True
 
         encoding = file_encoding(file)
 
-        with open(file, 'r', encoding = encoding) as text_file:
-            line = text_file.readline().rstrip()
+        if encoding:
+            logging.debug(f"\tNot a SubRip file, opening file with encoding {encoding}")
 
-            if txt_format1.fullmatch(line) or txt_format2.fullmatch(line):
-                return True
+            with open(file, 'r', encoding = encoding) as text_file:
+                line = text_file.readline().rstrip()
 
+                if txt_format1.fullmatch(line) or txt_format2.fullmatch(line):
+                    logging.debug("\tSimple subtitle format detected")
+                    return True
+
+    logging.debug("\tNot a subtitle file")
     return False
 
 
