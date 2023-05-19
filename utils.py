@@ -41,9 +41,6 @@ def file_encoding(file: str) -> str:
 
     encoding = detector.result["encoding"]
 
-    if encoding == "UTF-8-SIG":
-        encoding = "UTF-8"
-
     return encoding
 
 

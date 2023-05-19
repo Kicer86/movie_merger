@@ -118,8 +118,10 @@ class TwoTone:
             output_file = tempfile.NamedTemporaryFile()
             output_subtitle = output_file.name + ".srt"
 
+            encoding = subtitle.encoding if subtitle.encoding != "UTF-8-SIG" else "utf-8"
+
             status = utils.start_process("ffmpeg",
-                                         ["-sub_charenc", subtitle.encoding, "-i", subtitle.path, output_subtitle])
+                                         ["-sub_charenc", encoding, "-i", subtitle.path, output_subtitle])
 
             output_file.close()
 
@@ -205,6 +207,7 @@ class TwoTone:
         logging.info("\tDone")
 
     def _process_video(self, video_file: str, subtitles_fetcher):
+        logging.debug(f"Analyzing subtitles for video: {video_file}")
         subtitles = subtitles_fetcher(video_file)
         if subtitles:
             self._merge(video_file, subtitles)
