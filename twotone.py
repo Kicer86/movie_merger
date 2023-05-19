@@ -196,6 +196,8 @@ class TwoTone:
             result = utils.start_process("ffmpeg", options)
 
             if result.returncode != 0:
+                if os.path.exists(tmp_video):
+                    os.remove(tmp_video)
                 raise RuntimeError(f"ffmpeg exited with unexpected error:\n{result.stderr.decode('utf-8')}")
 
             if os.path.exists(tmp_video):
