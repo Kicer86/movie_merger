@@ -150,6 +150,12 @@ class TwoTone:
         tmp_video = video_dir + "/." + video_name + "." + "mkv"
         output_video = video_dir + "/" + video_name + "." + "mkv"
 
+        # make sure output file does not exist
+        i = 1
+        while os.path.exists(output_video):
+            output_video = video_dir + "/" + video_name + "." + str(i) + "."+ "mkv"
+            i += 1
+
         # set inputs
         options = ["-i", input_video]
 

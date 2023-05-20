@@ -239,6 +239,21 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "de")
             self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "pl")
 
+    def test_video_override(self):
+        with TestDataWorkingDirectory() as td:
+
+            # create mkv file
+            add_test_media("Woman.*(mp4|srt)", td.path)
+            twotone.run([td.path])
+
+            # now there are two movies with the same name but different extension.
+            # twotone should not overwrite mkv movie
+            add_test_media("Woman.*(mp4|srt)", td.path)
+            twotone.run([td.path])
+
+            # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 2)
 
 if __name__ == '__main__':
     unittest.main()
