@@ -1,7 +1,4 @@
 
-import sys
-sys.path.append("..")
-
 import hashlib
 import os.path
 import subprocess
