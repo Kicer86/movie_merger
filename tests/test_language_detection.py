@@ -82,6 +82,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "de")
             self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "cs")
             self.assertEqual(tracks["subtitle"][0]["disposition"]["default"], 1)
+            self.assertEqual(tracks["subtitle"][1]["disposition"]["default"], 0)
 
 
 if __name__ == '__main__':
