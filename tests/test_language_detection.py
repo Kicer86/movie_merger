@@ -4,7 +4,7 @@ import unittest
 
 import twotone
 from common import TestDataWorkingDirectory, file_tracks, list_files, add_test_media
-
+from utils import get_video_data
 
 class SimpleSubtitlesMerge(unittest.TestCase):
 
@@ -77,12 +77,12 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(files_after), 1)
 
             video = files_after[0]
-            tracks = file_tracks(video)
-            self.assertEqual(len(tracks["subtitle"]), 5)
-            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "de")
-            self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "cs")
-            self.assertEqual(tracks["subtitle"][0]["disposition"]["default"], 1)
-            self.assertEqual(tracks["subtitle"][1]["disposition"]["default"], 0)
+            tracks = get_video_data(video)
+            self.assertEqual(len(tracks.subtitles), 5)
+            self.assertEqual(tracks.subtitles[0].language, "de")
+            self.assertEqual(tracks.subtitles[1].language, "cs")
+            self.assertEqual(tracks.subtitles[0].default, 1)
+            self.assertEqual(tracks.subtitles[1].default, 0)
 
 
 if __name__ == '__main__':

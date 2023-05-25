@@ -9,7 +9,7 @@ import subprocess
 from collections import namedtuple
 from pathlib import Path
 
-Subtitle = namedtuple("Subtitle", "language")
+Subtitle = namedtuple("Subtitle", "language default")
 VideoInfo = namedtuple("VideoInfo", "subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
@@ -94,6 +94,6 @@ def get_video_data(path: str) -> [VideoInfo]:
     for stream in output_json["streams"]:
         type = stream["codec_type"]
         if type == "subtitle":
-            subtitles.append(Subtitle(stream["tags"]["language"]))
+            subtitles.append(Subtitle(stream["tags"]["language"], stream["disposition"]["default"]))
 
     return VideoInfo(subtitles)
