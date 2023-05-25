@@ -26,7 +26,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitle"]), 1)
-            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "en")
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "eng")
 
     def test_polish_recognition(self):
         with TestDataWorkingDirectory() as td:
@@ -46,7 +46,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitle"]), 1)
-            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "pl")
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "pol")
 
     def test_language_priority(self):
         with TestDataWorkingDirectory() as td:
@@ -79,8 +79,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             video = files_after[0]
             tracks = get_video_data(video)
             self.assertEqual(len(tracks.subtitles), 5)
-            self.assertEqual(tracks.subtitles[0].language, "de")
-            self.assertEqual(tracks.subtitles[1].language, "cs")
+            self.assertEqual(tracks.subtitles[0].language, "ger")
+            self.assertEqual(tracks.subtitles[1].language, "cze")
             self.assertEqual(tracks.subtitles[0].default, 1)
             self.assertEqual(tracks.subtitles[1].default, 0)
 

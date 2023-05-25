@@ -157,13 +157,18 @@ class TwoTone:
             output_video = video_dir + "/" + video_name + "." + str(i) + "."+ "mkv"
             i += 1
 
-        # set inputs
-        options = ["-i", input_video]
+        # output
+        options = ["-o", tmp_video]
+
+        # set input
+        options.append(input_video)
 
         self._remove_later(input_video)
 
+        # set subtitles and languages
         sorted_subtitles = self._sort_subtitles(subtitles)
 
+        default = True
         for subtitle in sorted_subtitles:
             logging.info(f"\tadd subtitles [{subtitle.language}]: {subtitle.path}")
             self._remove_later(subtitle.path)
@@ -172,35 +177,22 @@ class TwoTone:
             converted_subtitle = self._convert_subtitle(subtitle)
             self._remove_later(converted_subtitle.path)
 
-            options.extend(["-i", converted_subtitle.path])
-
-        # define stream types
-        options.extend(["-map", "0:v"])
-        options.extend(["-map", "0:a?"])
-        options.extend(["-map", "0:s?"])
-
-        for index in range(len(sorted_subtitles)):
-            options.extend([f"-map", f"{index + 1}:s"])
-
-        # codec - copy
-        options.extend(["-c", "copy"])
-
-        # set languages
-        video_info = utils.get_video_data(input_video)
-        existing_subtitles_count = len(video_info.subtitles)
-        for index in range(len(sorted_subtitles)):
-            subtitle = sorted_subtitles[index]
             lang = subtitle.language
             if lang and lang != "":
-                options.extend([f"-metadata:s:s:{index + existing_subtitles_count}", f"language={lang}"])
+                options.extend(["--language", f"0:{lang}"])
 
-        # output
-        options.append(tmp_video)
+            if default:
+                options.extend(["--default-track", "0:yes"])
+                default = False
+            else:
+                options.extend(["--default-track", "0:no"])
+
+            options.append(converted_subtitle.path)
 
         # perform
         logging.info("\tMerge in progress...")
         if not self.dry_run:
-            result = utils.start_process("ffmpeg", options)
+            result = utils.start_process("mkvmerge", options)
 
             if result.returncode != 0:
                 if os.path.exists(tmp_video):

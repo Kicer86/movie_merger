@@ -233,8 +233,8 @@ class SubtitlesMerge(unittest.TestCase):
             tracks = file_tracks(video)
             self.assertEqual(len(tracks["video"]), 1)
             self.assertEqual(len(tracks["subtitle"]), 2)
-            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "de")
-            self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "pl")
+            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "ger")
+            self.assertEqual(tracks["subtitle"][1]["tags"]["language"], "pol")
 
     def test_video_override(self):
         with TestDataWorkingDirectory() as td:

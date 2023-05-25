@@ -26,7 +26,8 @@ jobs:
       run: |
         sudo apt-get update &&  \
         sudo apt-get install    \
-          ffmpeg
+          ffmpeg                \
+          mkvmerge
 
     - name: Run unit tests
       continue-on-error: true       # TODO: remove when magic on ubuntu properly recognizes SubRip mime type
