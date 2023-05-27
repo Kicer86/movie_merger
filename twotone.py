@@ -192,12 +192,13 @@ class TwoTone:
         # perform
         logging.info("\tMerge in progress...")
         if not self.dry_run:
-            result = utils.start_process("mkvmerge", options)
+            cmd = "mkvmerge"
+            result = utils.start_process(cmd, options)
 
             if result.returncode != 0:
                 if os.path.exists(tmp_video):
                     os.remove(tmp_video)
-                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{result.stderr.decode('utf-8')}")
+                raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
 
             if os.path.exists(tmp_video):
                 self._remove()
