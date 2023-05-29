@@ -162,7 +162,6 @@ class TwoTone:
 
         # set input
         options.append(input_video)
-
         self._remove_later(input_video)
 
         # set subtitles and languages
@@ -201,10 +200,13 @@ class TwoTone:
                 raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
 
             if os.path.exists(tmp_video):
-                self._remove()
                 os.rename(tmp_video, output_video)
             else:
                 logging.error("Output file was not created")
+                raise RuntimeError(f"{cmd} did not create output file")
+
+            # Remove all input and temporary files. Only output file should left
+            self._remove()
 
         logging.info("\tDone")
 
