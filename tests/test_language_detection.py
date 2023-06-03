@@ -3,8 +3,8 @@ import os
 import unittest
 
 import twotone
-from common import TestDataWorkingDirectory, file_tracks, list_files, add_test_media
-from utils import get_video_data
+from common import TestDataWorkingDirectory, list_files, add_test_media
+from utils import get_video_data, get_video_data
 
 class SimpleSubtitlesMerge(unittest.TestCase):
 
@@ -23,10 +23,10 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             video = files_after[0]
             self.assertEqual(video[-4:], ".mkv")
-            tracks = file_tracks(video)
-            self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitle"]), 1)
-            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "eng")
+            tracks = get_video_data(video)
+            self.assertEqual(len(tracks.video_tracks), 1)
+            self.assertEqual(len(tracks.subtitles), 1)
+            self.assertEqual(tracks.subtitles[0].language, "eng")
 
     def test_polish_recognition(self):
         with TestDataWorkingDirectory() as td:
@@ -43,10 +43,10 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             video = files_after[0]
             self.assertEqual(video[-4:], ".mkv")
-            tracks = file_tracks(video)
-            self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitle"]), 1)
-            self.assertEqual(tracks["subtitle"][0]["tags"]["language"], "pol")
+            tracks = get_video_data(video)
+            self.assertEqual(len(tracks.video_tracks), 1)
+            self.assertEqual(len(tracks.subtitles), 1)
+            self.assertEqual(tracks.subtitles[0].language, "pol")
 
     def test_language_priority(self):
         with TestDataWorkingDirectory() as td:

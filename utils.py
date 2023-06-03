@@ -10,7 +10,8 @@ from collections import namedtuple
 from pathlib import Path
 
 Subtitle = namedtuple("Subtitle", "language default")
-VideoInfo = namedtuple("VideoInfo", "subtitles")
+VideoTrack = namedtuple("VideoTrack", "")
+VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 txt_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
@@ -91,9 +92,15 @@ def get_video_data(path: str) -> [VideoInfo]:
     output_json = json.loads(output_lines)
 
     subtitles = []
+    video_tracks = []
     for stream in output_json["streams"]:
         type = stream["codec_type"]
         if type == "subtitle":
-            subtitles.append(Subtitle(stream["tags"]["language"], stream["disposition"]["default"]))
+            tags = stream["tags"]
+            language = tags.get("language", None)
+            is_default = stream["disposition"]["default"]
+            subtitles.append(Subtitle(language, is_default))
+        elif type == "video":
+            video_tracks.append(VideoTrack())
 
-    return VideoInfo(subtitles)
+    return VideoInfo(video_tracks, subtitles)

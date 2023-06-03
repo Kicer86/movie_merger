@@ -32,29 +32,6 @@ class TestDataWorkingDirectory:
         shutil.rmtree(self.directory)
 
 
-def file_tracks(path: str) -> ():
-    streams = {}
-
-    command = ["ffprobe"]
-    command.extend(["-v", "quiet"])
-    command.extend(["-print_format", "json"])
-    command.append("-show_format")
-    command.append("-show_streams")
-    command.append(path)
-
-    process = subprocess.run(command, env={"LC_ALL": "C"}, capture_output=True)
-
-    output_lines = process.stdout
-    output_str = output_lines.decode('utf8')
-    output_json = json.loads(output_lines)
-
-    for stream in output_json["streams"]:
-        type = stream["codec_type"]
-        streams.setdefault(type, []).append(stream)
-
-    return streams
-
-
 def list_files(path: str) -> []:
     results = []
 
