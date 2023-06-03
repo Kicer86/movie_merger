@@ -148,7 +148,6 @@ class TwoTone:
         logging.info(f"Video file: {input_video}")
 
         video_dir, video_name, video_extension = self._split_path(input_video)
-        tmp_video = video_dir + "/." + video_name + "." + "mkv"
         output_video = video_dir + "/" + video_name + "." + "mkv"
 
         # collect details about input file
@@ -161,7 +160,7 @@ class TwoTone:
             i += 1
 
         # output
-        options = ["-o", tmp_video]
+        options = ["-o", output_video]
 
         # set input
         options.append(input_video)
@@ -198,13 +197,11 @@ class TwoTone:
             result = utils.start_process(cmd, options)
 
             if result.returncode != 0:
-                if os.path.exists(tmp_video):
-                    os.remove(tmp_video)
+                if os.path.exists(output_video):
+                    os.remove(output_video)
                 raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
 
-            if os.path.exists(tmp_video):
-                os.rename(tmp_video, output_video)
-            else:
+            if not os.path.exists(output_video):
                 logging.error("Output file was not created")
                 raise RuntimeError(f"{cmd} did not create output file")
 
