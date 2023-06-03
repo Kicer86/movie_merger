@@ -151,6 +151,9 @@ class TwoTone:
         tmp_video = video_dir + "/." + video_name + "." + "mkv"
         output_video = video_dir + "/" + video_name + "." + "mkv"
 
+        # collect details about input file
+        input_file_details = utils.get_video_data(input_video)
+
         # make sure output file does not exist
         i = 1
         while os.path.exists(output_video):
@@ -204,6 +207,14 @@ class TwoTone:
             else:
                 logging.error("Output file was not created")
                 raise RuntimeError(f"{cmd} did not create output file")
+
+            # validate output file correctness
+            output_file_details = utils.get_video_data(output_video)
+
+            if input_file_details.video_tracks != output_file_details.video_tracks or \
+                len(input_file_details.subtitles) + len(sorted_subtitles) != len(output_file_details.subtitles):
+                    logging.error("Output file seems to be corrupted")
+                    raise RuntimeError(f"{cmd} created a corrupted file")
 
             # Remove all input and temporary files. Only output file should left
             self._remove()
