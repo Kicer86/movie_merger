@@ -13,6 +13,8 @@ Subtitle = namedtuple("Subtitle", "language default")
 VideoTrack = namedtuple("VideoTrack", "")
 VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
+ToolsPaths = namedtuple("ToolsPaths", "mkvmerge ffmpeg ffprobe")
+
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)

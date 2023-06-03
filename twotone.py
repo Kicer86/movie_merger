@@ -18,11 +18,12 @@ work = True
 
 class TwoTone:
 
-    def __init__(self, dry_run: bool, language: str, lang_priority: str):
+    def __init__(self, dry_run: bool, language: str, lang_priority: str, tools: utils.ToolsPaths = utils.ToolsPaths(None, None, None)):
         self.dry_run = dry_run
         self.language = language
         self.to_be_removed = []
         self.lang_priority = [] if not lang_priority or lang_priority == "" else lang_priority.split(",")
+        self.tools = tools
 
     def _remove_later(self, path: str):
         self.to_be_removed.append(path)
