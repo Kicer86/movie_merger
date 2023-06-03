@@ -2,19 +2,20 @@
 import cchardet
 import json
 import logging
-import magic
 import os.path
 import re
 import subprocess
 from collections import namedtuple
+from itertools import islice
 from pathlib import Path
 
 Subtitle = namedtuple("Subtitle", "language default")
 VideoTrack = namedtuple("VideoTrack", "")
 VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
-txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
-txt_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
+subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
+subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
+subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
 
 
 def start_process(process: str, args: [str]) -> ProcessResult:
@@ -55,23 +56,18 @@ def is_subtitle(file: str) -> bool:
 
     if ext == ".srt" or ext == ".sub" or ext == ".txt":
         file = os.path.realpath(file)
-        mime = magic.from_file(file, mime=True)
-
-        if mime == "application/x-subrip":
-            logging.debug("\tSubRip file")
-            return True
-
         encoding = file_encoding(file)
 
         if encoding:
-            logging.debug(f"\tNot a SubRip file, opening file with encoding {encoding}")
+            logging.debug(f"\tOpening file with encoding {encoding}")
 
             with open(file, 'r', encoding = encoding) as text_file:
-                line = text_file.readline().rstrip()
+                head = "".join(islice(text_file, 5)).strip()
 
-                if txt_format1.fullmatch(line) or txt_format2.fullmatch(line):
-                    logging.debug("\tSimple subtitle format detected")
-                    return True
+                for format in [subtitle_format1, subtitle_format2, subtitle_format3]:
+                    if format.match(head):
+                        logging.debug("\tSubtitle format detected")
+                        return True
 
     logging.debug("\tNot a subtitle file")
     return False

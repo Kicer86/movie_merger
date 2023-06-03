@@ -30,6 +30,5 @@ jobs:
           mkvtoolnix
 
     - name: Run unit tests
-      continue-on-error: true       # TODO: remove when magic on ubuntu properly recognizes SubRip mime type
       run: |
         python3 -m unittest discover tests
