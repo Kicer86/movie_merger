@@ -1,13 +1,10 @@
 
-import sys
-sys.path.append("..")
-
 import os
 import unittest
 
 import twotone
-from common import TestDataWorkingDirectory, file_tracks, list_files, add_test_media
-
+from common import TestDataWorkingDirectory, list_files, add_test_media
+from utils import get_video_data, get_video_data
 
 class SimpleSubtitlesMerge(unittest.TestCase):
 
@@ -26,10 +23,10 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             video = files_after[0]
             self.assertEqual(video[-4:], ".mkv")
-            tracks = file_tracks(video)
-            self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "eng")
+            tracks = get_video_data(video)
+            self.assertEqual(len(tracks.video_tracks), 1)
+            self.assertEqual(len(tracks.subtitles), 1)
+            self.assertEqual(tracks.subtitles[0].language, "eng")
 
     def test_polish_recognition(self):
         with TestDataWorkingDirectory() as td:
@@ -46,10 +43,10 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             video = files_after[0]
             self.assertEqual(video[-4:], ".mkv")
-            tracks = file_tracks(video)
-            self.assertEqual(len(tracks["video"]), 1)
-            self.assertEqual(len(tracks["subtitles"]), 1)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "pol")
+            tracks = get_video_data(video)
+            self.assertEqual(len(tracks.video_tracks), 1)
+            self.assertEqual(len(tracks.subtitles), 1)
+            self.assertEqual(tracks.subtitles[0].language, "pol")
 
     def test_language_priority(self):
         with TestDataWorkingDirectory() as td:
@@ -80,10 +77,12 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(files_after), 1)
 
             video = files_after[0]
-            tracks = file_tracks(video)
-            self.assertEqual(len(tracks["subtitles"]), 5)
-            self.assertEqual(tracks["subtitles"][0]["properties"]["language"], "ger")
-            self.assertEqual(tracks["subtitles"][1]["properties"]["language"], "cze")
+            tracks = get_video_data(video)
+            self.assertEqual(len(tracks.subtitles), 5)
+            self.assertEqual(tracks.subtitles[0].language, "ger")
+            self.assertEqual(tracks.subtitles[1].language, "cze")
+            self.assertEqual(tracks.subtitles[0].default, 1)
+            self.assertEqual(tracks.subtitles[1].default, 0)
 
 
 if __name__ == '__main__':

@@ -1,12 +1,34 @@
 
 import cchardet
-import magic
+import json
+import logging
 import os.path
 import re
+import subprocess
+from collections import namedtuple
+from itertools import islice
 from pathlib import Path
 
-txt_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
-txt_format2 = re.compile("\{[0-9]+\}\{[0-9]+\}.*")
+Subtitle = namedtuple("Subtitle", "language default")
+VideoTrack = namedtuple("VideoTrack", "")
+VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
+ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
+subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
+subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
+subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
+
+
+def start_process(process: str, args: [str]) -> ProcessResult:
+    command = [process]
+    command.extend(args)
+
+    logging.debug(f"Starting {process} with options: {' '.join(args)}")
+    sub_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    stdout, stderr = sub_process.communicate()
+
+    logging.debug(f"Process finished with {sub_process.returncode}")
+
+    return ProcessResult(sub_process.returncode, stdout, stderr)
 
 
 def file_encoding(file: str) -> str:
@@ -20,34 +42,61 @@ def file_encoding(file: str) -> str:
         detector.close()
 
     encoding = detector.result["encoding"]
+
     return encoding
 
 
 def is_video(file: str) -> bool:
     return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov"]
 
+
 def is_subtitle(file: str) -> bool:
+    logging.debug(f"Checking file {file} for being subtitle")
     ext = file[-4:]
 
     if ext == ".srt" or ext == ".sub" or ext == ".txt":
         file = os.path.realpath(file)
-        mime = magic.from_file(file, mime=True)
-
-        if mime == "application/x-subrip":
-            return True
-
         encoding = file_encoding(file)
 
-        with open(file, 'r', encoding = encoding) as text_file:
-            line = text_file.readline().rstrip()
+        if encoding:
+            logging.debug(f"\tOpening file with encoding {encoding}")
 
-            if txt_format1.fullmatch(line) or txt_format2.fullmatch(line):
-                return True
+            with open(file, 'r', encoding = encoding) as text_file:
+                head = "".join(islice(text_file, 5)).strip()
 
+                for format in [subtitle_format1, subtitle_format2, subtitle_format3]:
+                    if format.match(head):
+                        logging.debug("\tSubtitle format detected")
+                        return True
+
+    logging.debug("\tNot a subtitle file")
     return False
 
-def is_subtitle_conversion_required(path: str) -> bool:
-    path = os.path.realpath(path)
-    mime = magic.from_file(path, mime=True)
 
-    return mime == "text/plain"
+def get_video_data(path: str) -> [VideoInfo]:
+    args = []
+    args.extend(["-v", "quiet"])
+    args.extend(["-print_format", "json"])
+    args.append("-show_format")
+    args.append("-show_streams")
+    args.append(path)
+
+    process = start_process("ffprobe", args)
+
+    output_lines = process.stdout
+    output_str = output_lines.decode('utf8')
+    output_json = json.loads(output_lines)
+
+    subtitles = []
+    video_tracks = []
+    for stream in output_json["streams"]:
+        type = stream["codec_type"]
+        if type == "subtitle":
+            tags = stream["tags"]
+            language = tags.get("language", None)
+            is_default = stream["disposition"]["default"]
+            subtitles.append(Subtitle(language, is_default))
+        elif type == "video":
+            video_tracks.append(VideoTrack())
+
+    return VideoInfo(video_tracks, subtitles)

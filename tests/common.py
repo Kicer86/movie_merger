@@ -32,30 +32,15 @@ class TestDataWorkingDirectory:
         shutil.rmtree(self.directory)
 
 
-def file_tracks(path: str) -> ():
-    tracks= {}
-
-    process = subprocess.run(["mkvmerge", "-J", path], env={"LC_ALL": "C"}, capture_output=True)
-
-    output_lines = process.stdout
-    output_str = output_lines.decode('utf8')
-    output_json = json.loads(output_lines)
-
-    for track in output_json["tracks"]:
-        type = track["type"]
-        tracks.setdefault(type, []).append(track)
-
-    return tracks
-
-
 def list_files(path: str) -> []:
     results = []
 
-    for filename in os.listdir(path):
-        filepath = os.path.join(path, filename)
+    for root, _, files in os.walk(path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
 
-        if os.path.isfile(filepath):
-            results.append(filepath)
+            if os.path.isfile(filepath):
+                results.append(filepath)
 
     return results
 
@@ -69,7 +54,7 @@ def add_test_media(filter: str, test_case_path: str, suffixes: [str] = [None]):
                 file_path = file.name
                 if filter_regex.fullmatch(file_path):
                     for suffix in suffixes:
-                        suffix = "" if suffix == None else "-" + suffix + "-"
+                        suffix = "" if suffix is None else "-" + suffix + "-"
                         file_path = Path(file)
                         dst_file_name = file_path.stem + suffix + file_path.suffix
                         os.symlink(os.path.join(current_path, media, file_path),
