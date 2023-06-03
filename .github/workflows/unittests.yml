@@ -26,8 +26,9 @@ jobs:
       run: |
         sudo apt-get update &&  \
         sudo apt-get install    \
-          ffmpeg                \
-          mkvtoolnix
+          mkvtoolnix            \
+          ffmpeg
+
 
     - name: Run unit tests
       run: |
