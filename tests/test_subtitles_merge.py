@@ -1,28 +1,11 @@
 
-import hashlib
 import os.path
 import subprocess
 import unittest
 
 import utils
 import twotone
-from common import TestDataWorkingDirectory, list_files, add_test_media
-
-
-def hashes(path: str) -> [()]:
-    results = []
-
-    files = list_files(path)
-
-    for filepath in files:
-        with open(filepath, "rb") as f:
-            file_hash = hashlib.md5()
-            while chunk := f.read(8192):
-                file_hash.update(chunk)
-
-            results.append((filepath, file_hash.hexdigest()))
-
-    return results
+from common import TestDataWorkingDirectory, list_files, add_test_media, hashes
 
 
 class SubtitlesMerge(unittest.TestCase):
