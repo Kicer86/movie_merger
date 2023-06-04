@@ -3,6 +3,7 @@ import argparse
 import langid
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -18,7 +19,7 @@ work = True
 
 class TwoTone:
 
-    def __init__(self, dry_run: bool, language: str, lang_priority: str, tools: utils.ToolsPaths = utils.ToolsPaths(None, None, None)):
+    def __init__(self, dry_run: bool, language: str, lang_priority: str, tools: utils.ToolsPaths):
         self.dry_run = dry_run
         self.language = language
         self.to_be_removed = []
@@ -194,7 +195,7 @@ class TwoTone:
         # perform
         logging.info("\tMerge in progress...")
         if not self.dry_run:
-            cmd = "mkvmerge"
+            cmd = self.tools.mkvmerge
             result = utils.start_process(cmd, options)
 
             if result.returncode != 0:
@@ -266,15 +267,22 @@ def run(sys_args: [str]):
                              'french. If there are subtitles in any other language, they will be append at '
                              'the end in undefined order')
     parser.add_argument("--verbose", action='store_true', default=False, help='Verbose output')
+    parser.add_argument("--mkvmerge-path", help='Full path to mkvmerge program. If not provided, mkvmerge needs to be in PATH.')
 
     args = parser.parse_args(sys_args)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    mkvmerge_path = args.mkvmerge_path if args.mkvmerge_path else shutil.which('mkvmerge')
+    logging.debug(f"mkvmerge path: {mkvmerge_path}")
+
+    tools_paths = utils.ToolsPaths(mkvmerge_path, None, None)
+
     two_tone = TwoTone(dry_run=args.dry_run,
                        language=args.language,
-                       lang_priority=args.languages_priority)
+                       lang_priority=args.languages_priority,
+                       tools=tools_paths)
     two_tone.process_dir(args.videos_path[0])
 
 
