@@ -1,4 +1,3 @@
-
 import argparse
 import langid
 import logging
@@ -152,7 +151,7 @@ class TwoTone:
         # make sure output file does not exist
         i = 1
         while os.path.exists(output_video):
-            output_video = video_dir + "/" + video_name + "." + str(i) + "."+ "mkv"
+            output_video = video_dir + "/" + video_name + "." + str(i) + "." + "mkv"
             i += 1
 
         # output
@@ -205,9 +204,9 @@ class TwoTone:
             output_file_details = utils.get_video_data(output_video)
 
             if input_file_details.video_tracks != output_file_details.video_tracks or \
-                len(input_file_details.subtitles) + len(sorted_subtitles) != len(output_file_details.subtitles):
-                    logging.error("Output file seems to be corrupted")
-                    raise RuntimeError(f"{cmd} created a corrupted file")
+                    len(input_file_details.subtitles) + len(sorted_subtitles) != len(output_file_details.subtitles):
+                logging.error("Output file seems to be corrupted")
+                raise RuntimeError(f"{cmd} created a corrupted file")
 
             # Remove all input and temporary files. Only output file should left
             self._remove()
@@ -261,7 +260,8 @@ def run(sys_args: [str]):
                              'french. If there are subtitles in any other language, they will be append at '
                              'the end in undefined order')
     parser.add_argument("--verbose", action='store_true', default=False, help='Verbose output')
-    parser.add_argument("--mkvmerge-path", help='Full path to mkvmerge program. If not provided, mkvmerge needs to be in PATH.')
+    parser.add_argument("--mkvmerge-path",
+                        help='Full path to mkvmerge program. If not provided, mkvmerge needs to be in PATH.')
 
     args = parser.parse_args(sys_args)
 

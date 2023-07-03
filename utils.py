@@ -66,8 +66,8 @@ def is_subtitle(file: str) -> bool:
             with open(file, 'r', encoding = encoding) as text_file:
                 head = "".join(islice(text_file, 5)).strip()
 
-                for format in [subtitle_format1, subtitle_format2, subtitle_format3]:
-                    if format.match(head):
+                for subtitle_format in [subtitle_format1, subtitle_format2, subtitle_format3]:
+                    if subtitle_format.match(head):
                         logging.debug("\tSubtitle format detected")
                         return True
 
@@ -92,13 +92,13 @@ def get_video_data(path: str) -> [VideoInfo]:
     subtitles = []
     video_tracks = []
     for stream in output_json["streams"]:
-        type = stream["codec_type"]
-        if type == "subtitle":
+        stream_type = stream["codec_type"]
+        if stream_type == "subtitle":
             tags = stream["tags"]
             language = tags.get("language", None)
             is_default = stream["disposition"]["default"]
             subtitles.append(Subtitle(language, is_default))
-        elif type == "video":
+        elif stream_type == "video":
             video_tracks.append(VideoTrack())
 
     return VideoInfo(video_tracks, subtitles)
