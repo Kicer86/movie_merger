@@ -4,7 +4,7 @@ import unittest
 
 import twotone
 import utils
-from common import TestDataWorkingDirectory, list_files, add_test_media, hashes
+from common import TestDataWorkingDirectory, add_test_media, hashes
 from unittest.mock import patch
 
 
@@ -15,14 +15,15 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         cls._start_process = utils.start_process
 
     @patch("utils.start_process")
-    def test_mkvmerge_returns_with_error(self, mock_start_process):
+    def test_no_changes_when_mkvmerge_exists_with_error(self, mock_start_process):
 
         def start_process(cmd, args):
-            print(f"mocking '{cmd}' '{args}'")
-            if cmd == "ffprobe":
-                return self._start_process.__func__(cmd, args)
+            _, exec_name, _ = utils.split_path(cmd)
+
+            if exec_name == "mkvmerge":
+                return utils.ProcessResult(1, b"", b"")
             else:
-                return utils.ProcessResult(0, b"", b"")
+                return self._start_process.__func__(cmd, args)
 
         mock_start_process.side_effect = start_process
 
@@ -31,7 +32,11 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
-            twotone.run([td.path, "--dry-run"])
+            try:
+                twotone.run([td.path])
+            except RuntimeError:
+                pass
+
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
