@@ -34,12 +34,6 @@ class TwoTone:
             os.remove(file_to_remove)
         self.to_be_removed.clear()
 
-    @staticmethod
-    def _split_path(path: str) -> (str, str, str):
-        info = Path(path)
-
-        return str(info.parent), info.stem, info.suffix[1:]
-
     def _build_subtitle_from_path(self, path: str) -> Subtitle:
         encoding = utils.file_encoding(path)
         language = self.language if self.language != "auto" else self._guess_language(path, encoding)
@@ -149,7 +143,7 @@ class TwoTone:
     def _merge(self, input_video: str, subtitles: [str]):
         logging.info(f"Video file: {input_video}")
 
-        video_dir, video_name, video_extension = self._split_path(input_video)
+        video_dir, video_name, video_extension = utils.split_path(input_video)
         output_video = video_dir + "/" + video_name + "." + "mkv"
 
         # collect details about input file
