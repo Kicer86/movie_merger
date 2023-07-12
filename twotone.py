@@ -240,6 +240,7 @@ class TwoTone:
 def run(sys_args: [str]):
     parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run '
                                                  'before running as ALL source files will be deleted. '
+                                                 'Consider making a backup of your files. '
                                                  'It is safe to stop this script with ctrl+c - it will quit '
                                                  'gracefully in a while.')
     parser.add_argument('videos_path',
