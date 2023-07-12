@@ -84,6 +84,9 @@ def get_video_data(path: str) -> [VideoInfo]:
 
     process = start_process("ffprobe", args)
 
+    if process.returncode != 0:
+        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
+
     output_lines = process.stdout
     output_str = output_lines.decode('utf8')
     output_json = json.loads(output_lines)
