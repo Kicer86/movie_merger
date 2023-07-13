@@ -1,4 +1,5 @@
 
+import hashlib
 import inspect
 import json
 import os
@@ -59,3 +60,19 @@ def add_test_media(filter: str, test_case_path: str, suffixes: [str] = [None]):
                         dst_file_name = file_path.stem + suffix + file_path.suffix
                         os.symlink(os.path.join(current_path, media, file_path),
                                 os.path.join(test_case_path, dst_file_name))
+
+
+def hashes(path: str) -> [()]:
+    results = []
+
+    files = list_files(path)
+
+    for filepath in files:
+        with open(filepath, "rb") as f:
+            file_hash = hashlib.md5()
+            while chunk := f.read(8192):
+                file_hash.update(chunk)
+
+            results.append((filepath, file_hash.hexdigest()))
+
+    return results

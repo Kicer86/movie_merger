@@ -3,8 +3,9 @@ import os
 import unittest
 
 import twotone
+import utils
 from common import TestDataWorkingDirectory, list_files, add_test_media
-from utils import get_video_data, get_video_data
+
 
 class SimpleSubtitlesMerge(unittest.TestCase):
 
@@ -16,14 +17,14 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Hello World\n")
                 sf.write("00:00:06:This is some sample subtitle in english\n")
 
-            twotone.run([td.path, "-l", "auto"])
+            twotone.run([td.path, "-l", "auto", "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
 
             video = files_after[0]
             self.assertEqual(video[-4:], ".mkv")
-            tracks = get_video_data(video)
+            tracks = utils.get_video_data(video)
             self.assertEqual(len(tracks.video_tracks), 1)
             self.assertEqual(len(tracks.subtitles), 1)
             self.assertEqual(tracks.subtitles[0].language, "eng")
@@ -36,14 +37,14 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Witaj Świecie\n")
                 sf.write("00:00:06:To jest przykładowy tekst po polsku\n")
 
-            twotone.run([td.path, "-l", "auto"])
+            twotone.run([td.path, "-l", "auto", "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
 
             video = files_after[0]
             self.assertEqual(video[-4:], ".mkv")
-            tracks = get_video_data(video)
+            tracks = utils.get_video_data(video)
             self.assertEqual(len(tracks.video_tracks), 1)
             self.assertEqual(len(tracks.subtitles), 1)
             self.assertEqual(tracks.subtitles[0].language, "pol")
@@ -71,13 +72,13 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Bonjour le monde\n")
                 sf.write("00:00:06:Ceci est un exemple de sous-titre en français\n")
 
-            twotone.run([td.path, "-l", "auto", "-p" "de,cs"])
+            twotone.run([td.path, "-l", "auto", "-p" "de,cs", "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
 
             video = files_after[0]
-            tracks = get_video_data(video)
+            tracks = utils.get_video_data(video)
             self.assertEqual(len(tracks.subtitles), 5)
             self.assertEqual(tracks.subtitles[0].language, "ger")
             self.assertEqual(tracks.subtitles[1].language, "cze")

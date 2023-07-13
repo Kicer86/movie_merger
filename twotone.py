@@ -1,8 +1,8 @@
-
 import argparse
 import langid
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -31,12 +31,6 @@ class TwoTone:
         for file_to_remove in self.to_be_removed:
             os.remove(file_to_remove)
         self.to_be_removed.clear()
-
-    @staticmethod
-    def _split_path(path: str) -> (str, str, str):
-        info = Path(path)
-
-        return str(info.parent), info.stem, info.suffix[1:]
 
     def _build_subtitle_from_path(self, path: str) -> Subtitle:
         encoding = utils.file_encoding(path)
@@ -147,18 +141,20 @@ class TwoTone:
     def _merge(self, input_video: str, subtitles: [str]):
         logging.info(f"Video file: {input_video}")
 
-        video_dir, video_name, video_extension = self._split_path(input_video)
-        tmp_video = video_dir + "/." + video_name + "." + "mkv"
+        video_dir, video_name, video_extension = utils.split_path(input_video)
         output_video = video_dir + "/" + video_name + "." + "mkv"
+
+        # collect details about input file
+        input_file_details = utils.get_video_data(input_video)
 
         # make sure output file does not exist
         i = 1
         while os.path.exists(output_video):
-            output_video = video_dir + "/" + video_name + "." + str(i) + "."+ "mkv"
+            output_video = video_dir + "/" + video_name + "." + str(i) + "." + "mkv"
             i += 1
 
         # output
-        options = ["-o", tmp_video]
+        options = ["-o", output_video]
 
         # set input
         options.append(input_video)
@@ -195,15 +191,21 @@ class TwoTone:
             result = utils.start_process(cmd, options)
 
             if result.returncode != 0:
-                if os.path.exists(tmp_video):
-                    os.remove(tmp_video)
+                if os.path.exists(output_video):
+                    os.remove(output_video)
                 raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
 
-            if os.path.exists(tmp_video):
-                os.rename(tmp_video, output_video)
-            else:
+            if not os.path.exists(output_video):
                 logging.error("Output file was not created")
                 raise RuntimeError(f"{cmd} did not create output file")
+
+            # validate output file correctness
+            output_file_details = utils.get_video_data(output_video)
+
+            if input_file_details.video_tracks != output_file_details.video_tracks or \
+                    len(input_file_details.subtitles) + len(sorted_subtitles) != len(output_file_details.subtitles):
+                logging.error("Output file seems to be corrupted")
+                raise RuntimeError(f"{cmd} created a corrupted file")
 
             # Remove all input and temporary files. Only output file should left
             self._remove()
@@ -236,17 +238,19 @@ class TwoTone:
 
 
 def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run '
-                                                 'before running as ALL source files will be deleted. '
+    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. '
+                                                 'By default program does nothing but showing what will be done. '
+                                                 'Use --no-dry-run option to perform actual operation. '
+                                                 'Please mind that ALL source files, so consider making a backup. '
                                                  'It is safe to stop this script with ctrl+c - it will quit '
                                                  'gracefully in a while.')
     parser.add_argument('videos_path',
                         nargs=1,
                         help='Path with videos to combine.')
-    parser.add_argument("--dry-run", "-n",
+    parser.add_argument("--no-dry-run", "-r",
                         action='store_true',
                         default=False,
-                        help='No not modify any file, just print what will happen.')
+                        help='Perform actual operation.')
     parser.add_argument("--language", "-l",
                         help='Language code for found subtitles. By default none is used. See mkvmerge '
                              '--list-languages for available languages. For automatic detection use: auto')
@@ -263,7 +267,15 @@ def run(sys_args: [str]):
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    two_tone = TwoTone(dry_run=args.dry_run,
+    for tool in ["mkvmerge", "ffmpeg", "ffprobe"]:
+        path = shutil.which(tool)
+        if path is None:
+            raise RuntimeError(f"{tool} not found in PATH")
+        else:
+            logging.debug(f"{tool} path: {path}")
+
+    logging.info("Searching for movie and subtitle files to be merged")
+    two_tone = TwoTone(dry_run=not args.no_dry_run,
                        language=args.language,
                        lang_priority=args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
@@ -278,7 +290,6 @@ def sig_handler(signum, frame):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, sig_handler)
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    logging.info("Searching for movie and subtitle files to be merged")
     try:
         run(sys.argv[1:])
     except RuntimeError as e:

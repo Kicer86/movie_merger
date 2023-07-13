@@ -13,6 +13,7 @@ Subtitle = namedtuple("Subtitle", "language default")
 VideoTrack = namedtuple("VideoTrack", "")
 VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
+
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
@@ -64,8 +65,8 @@ def is_subtitle(file: str) -> bool:
             with open(file, 'r', encoding = encoding) as text_file:
                 head = "".join(islice(text_file, 5)).strip()
 
-                for format in [subtitle_format1, subtitle_format2, subtitle_format3]:
-                    if format.match(head):
+                for subtitle_format in [subtitle_format1, subtitle_format2, subtitle_format3]:
+                    if subtitle_format.match(head):
                         logging.debug("\tSubtitle format detected")
                         return True
 
@@ -83,6 +84,9 @@ def get_video_data(path: str) -> [VideoInfo]:
 
     process = start_process("ffprobe", args)
 
+    if process.returncode != 0:
+        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
+
     output_lines = process.stdout
     output_str = output_lines.decode('utf8')
     output_json = json.loads(output_lines)
@@ -90,13 +94,19 @@ def get_video_data(path: str) -> [VideoInfo]:
     subtitles = []
     video_tracks = []
     for stream in output_json["streams"]:
-        type = stream["codec_type"]
-        if type == "subtitle":
+        stream_type = stream["codec_type"]
+        if stream_type == "subtitle":
             tags = stream["tags"]
             language = tags.get("language", None)
             is_default = stream["disposition"]["default"]
             subtitles.append(Subtitle(language, is_default))
-        elif type == "video":
+        elif stream_type == "video":
             video_tracks.append(VideoTrack())
 
     return VideoInfo(video_tracks, subtitles)
+
+
+def split_path(path: str) -> (str, str, str):
+    info = Path(path)
+
+    return str(info.parent), info.stem, info.suffix[1:]
