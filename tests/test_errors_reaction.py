@@ -33,13 +33,14 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
             try:
-                twotone.run([td.path])
+                twotone.run([td.path, "--no-dry-run"])
             except RuntimeError:
                 pass
 
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
+            self.assertEqual(mock_start_process.call_count, 3)
 
     @patch("utils.start_process")
     def test_no_changes_when_ffprobe_exists_with_error(self, mock_start_process):
@@ -60,13 +61,14 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
             try:
-                twotone.run([td.path])
+                twotone.run([td.path, "--no-dry-run"])
             except RuntimeError:
                 pass
 
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
+            self.assertEqual(mock_start_process.call_count, 1)
 
 
     @patch("utils.start_process")
@@ -88,13 +90,14 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
             try:
-                twotone.run([td.path])
+                twotone.run([td.path, "--no-dry-run"])
             except RuntimeError:
                 pass
 
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
+            self.assertEqual(mock_start_process.call_count, 2)
 
 if __name__ == '__main__':
     unittest.main()

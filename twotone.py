@@ -238,18 +238,19 @@ class TwoTone:
 
 
 def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. Try dry run '
-                                                 'before running as ALL source files will be deleted. '
-                                                 'Consider making a backup of your files. '
+    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. '
+                                                 'By default program does nothing but showing what will be done. '
+                                                 'Use --no-dry-run option to perform actual operation. '
+                                                 'Please mind that ALL source files, so consider making a backup. '
                                                  'It is safe to stop this script with ctrl+c - it will quit '
                                                  'gracefully in a while.')
     parser.add_argument('videos_path',
                         nargs=1,
                         help='Path with videos to combine.')
-    parser.add_argument("--dry-run", "-n",
+    parser.add_argument("--no-dry-run", "-r",
                         action='store_true',
                         default=False,
-                        help='No not modify any file, just print what will happen.')
+                        help='Perform actual operation.')
     parser.add_argument("--language", "-l",
                         help='Language code for found subtitles. By default none is used. See mkvmerge '
                              '--list-languages for available languages. For automatic detection use: auto')
@@ -273,7 +274,8 @@ def run(sys_args: [str]):
         else:
             logging.debug(f"{tool} path: {path}")
 
-    two_tone = TwoTone(dry_run=args.dry_run,
+    logging.info("Searching for movie and subtitle files to be merged")
+    two_tone = TwoTone(dry_run=not args.no_dry_run,
                        language=args.language,
                        lang_priority=args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
@@ -288,7 +290,6 @@ def sig_handler(signum, frame):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, sig_handler)
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    logging.info("Searching for movie and subtitle files to be merged")
     try:
         run(sys.argv[1:])
     except RuntimeError as e:

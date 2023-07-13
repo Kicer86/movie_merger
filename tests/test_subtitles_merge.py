@@ -16,7 +16,7 @@ class SubtitlesMerge(unittest.TestCase):
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2 * 9)        # 9 videos and 9 subtitles expected
-            twotone.run([td.path, "--dry-run"])
+            twotone.run([td.path])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
@@ -27,7 +27,7 @@ class SubtitlesMerge(unittest.TestCase):
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
-            twotone.run([td.path, "--dry-run"])
+            twotone.run([td.path])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
@@ -39,7 +39,7 @@ class SubtitlesMerge(unittest.TestCase):
             files_before = list_files(td.path)
             self.assertEqual(len(files_before), 2 * 9)        # 9 videos and 9 subtitles expected
 
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1 * 9)        # 9 mkv videos expected
@@ -50,36 +50,13 @@ class SubtitlesMerge(unittest.TestCase):
                 self.assertEqual(len(tracks.video_tracks), 1)
                 self.assertEqual(len(tracks.subtitles), 1)
 
-    def test_appending_subtitles_to_mkv_with_subtitles(self):
-        with TestDataWorkingDirectory() as td:
-
-            # combine mp4 with srt into mkv
-            add_test_media("Atoms.*(mp4|srt)", td.path)
-
-            twotone.run([td.path])
-
-            # combine mkv with srt into mkv with 2 subtitles
-            add_test_media("Atoms.*srt", td.path)
-
-            twotone.run([td.path])
-
-            # verify results
-            files_after = list_files(td.path)
-            self.assertEqual(len(files_after), 1)
-
-            video = files_after[0]
-            self.assertEqual(video[-4:], ".mkv")
-            tracks = utils.get_video_data(video)
-            self.assertEqual(len(tracks.video_tracks), 1)
-            self.assertEqual(len(tracks.subtitles), 2)
-
     def test_subtitles_language(self):
         with TestDataWorkingDirectory() as td:
 
             # combine mp4 with srt into mkv
             add_test_media("Atoms.*(mp4|srt)", td.path)
 
-            twotone.run([td.path, "-l", "pol"])
+            twotone.run([td.path, "-l", "pol", "--no-dry-run"])
 
             # verify results
             files_after = list_files(td.path)
@@ -99,7 +76,7 @@ class SubtitlesMerge(unittest.TestCase):
             add_test_media("Atoms.*mp4", td.path)
             add_test_media("Atoms.*srt", td.path, ["PL", "EN", "DE"])
 
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             # verify results: all subtitle-like files should be sucked in
             files_after = list_files(td.path)
@@ -116,7 +93,7 @@ class SubtitlesMerge(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
             add_test_media("herd-of-horses-in-fog.*(mp4|txt)", td.path)
 
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             # verify results
             files_after = list_files(td.path)
@@ -140,7 +117,7 @@ class SubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Witaj Świecie\n")
                 sf.write("00:00:06:To jest przykładowy tekst po polsku\n")
 
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
@@ -162,7 +139,7 @@ class SubtitlesMerge(unittest.TestCase):
             add_test_media("Grass.*mp4", subdir)
             add_test_media("Grass.*srt", subdir, ["PL", "EN"])
 
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 2)
@@ -183,7 +160,7 @@ class SubtitlesMerge(unittest.TestCase):
 
             add_test_media("sea-waves-crashing-on-beach-shore.*srt", subdir, ["DE", "CS"])
 
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
@@ -200,12 +177,12 @@ class SubtitlesMerge(unittest.TestCase):
             # combine mp4 with srt into mkv
             add_test_media("fog-over-mountainside.*(mp4|srt)", td.path)
 
-            twotone.run([td.path, "-l", "de"])
+            twotone.run([td.path, "-l", "de", "--no-dry-run"])
 
             # combine mkv with srt into mkv with 2 subtitles
             add_test_media("fog-over-mountainside.*srt", td.path)
 
-            twotone.run([td.path, "-l", "pl"])
+            twotone.run([td.path, "-l", "pl", "--no-dry-run"])
 
             # verify results
             files_after = list_files(td.path)
@@ -224,16 +201,17 @@ class SubtitlesMerge(unittest.TestCase):
 
             # create mkv file
             add_test_media("Woman.*(mp4|srt)", td.path)
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             # now there are two movies with the same name but different extension.
             # twotone should not overwrite mkv movie
             add_test_media("Woman.*(mp4|srt)", td.path)
-            twotone.run([td.path])
+            twotone.run([td.path, "--no-dry-run"])
 
             # verify results
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 2)
+
 
 if __name__ == '__main__':
     unittest.main()
