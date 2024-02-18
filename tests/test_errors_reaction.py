@@ -15,7 +15,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
         cls._start_process = utils.start_process
 
     @patch("utils.start_process")
-    def test_no_changes_when_mkvmerge_exists_with_error(self, mock_start_process):
+    def test_no_changes_when_mkvmerge_exits_with_error(self, mock_start_process):
 
         def start_process(cmd, args):
             _, exec_name, _ = utils.split_path(cmd)
@@ -43,7 +43,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(mock_start_process.call_count, 3)
 
     @patch("utils.start_process")
-    def test_no_changes_when_ffprobe_exists_with_error(self, mock_start_process):
+    def test_no_changes_when_ffprobe_exits_with_error(self, mock_start_process):
 
         def start_process(cmd, args):
             _, exec_name, _ = utils.split_path(cmd)
@@ -72,7 +72,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
 
     @patch("utils.start_process")
-    def test_no_changes_when_ffmpeg_exists_with_error(self, mock_start_process):
+    def test_no_changes_when_ffmpeg_exits_with_error(self, mock_start_process):
 
         def start_process(cmd, args):
             _, exec_name, _ = utils.split_path(cmd)
