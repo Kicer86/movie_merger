@@ -1,4 +1,4 @@
  
 [submodule "tests/videos"]
 	path = tests/videos
-	url = https://github.com/Kicer86/VOF-media.git
+	url = https://gitlab.com/kicer86/video-files.git
