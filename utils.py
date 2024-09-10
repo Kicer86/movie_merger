@@ -84,6 +84,33 @@ def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
     return False
 
 
+# function converts MicroDVD subtitles to be 25 fps based
+def fix_microdvd_subtitles_fps(subtitles_path: str, result_path: str, subtitles_fps: float):
+    # Wczytanie zawartości pliku wejściowego
+    with open(subtitles_path, 'r') as input_file:
+        lines = input_file.readlines()
+
+    scale = subtitles_fps / 24
+    line_pattern = r'\{(\d+)\}\{(\d+)\}(.*)'
+    scaled_lines = []
+
+    for line in lines:
+        matches = re.match(line_pattern, line)
+
+        start_frame = int(matches.group(1))
+        end_frame =  int(matches.group(2))
+        subtitle = matches.group(3)
+
+        scaled_start_frame = int(start_frame / scale)
+        scaled_end_frame = int(end_frame / scale)
+
+        scaled_line = f"{{{scaled_start_frame}}}{{{scaled_end_frame}}}{subtitle}\n"
+        scaled_lines.append(scaled_line)
+
+    with open(result_path, 'w') as output_file:
+        output_file.writelines(scaled_lines)
+
+
 def get_video_data(path: str) -> [VideoInfo]:
     args = []
     args.extend(["-v", "quiet"])

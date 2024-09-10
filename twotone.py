@@ -122,15 +122,21 @@ class TwoTone:
         converted_subtitle = subtitle
 
         if not self.dry_run:
+            input_file = subtitle.path
             output_file = self._get_temporary_file("srt")
             encoding = subtitle.encoding if subtitle.encoding != "UTF-8-SIG" else "utf-8"
 
             # ffmpeg apparently does not handle MicroDVD perfectly, do some preprocessing when fps is different than 25
             if video_fps != "25/1" and utils.is_subtitle_microdvd(subtitle):
-                pass
+                fps = eval(video_fps)
+                utils.fix_microdvd_subtitles_fps(input_file, output_file, fps)
+
+                # use result of fix_microdvd_subtitles_fps() as new input, and create new temporary file for output
+                input_file = output_file
+                output_file = self._get_temporary_file("srt")
 
             status = utils.start_process("ffmpeg",
-                                         ["-hide_banner", "-y", "-sub_charenc", encoding, "-i", subtitle.path, output_file])
+                                         ["-hide_banner", "-y", "-sub_charenc", encoding, "-i", input_file, output_file])
 
             if status.returncode != 0:
                 raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
