@@ -84,31 +84,47 @@ def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
     return False
 
 
-# function converts MicroDVD subtitles to be 25 fps based
-def fix_microdvd_subtitles_fps(subtitles_path: str, result_path: str, subtitles_fps: float):
-    # Wczytanie zawartości pliku wejściowego
-    with open(subtitles_path, 'r') as input_file:
-        lines = input_file.readlines()
+# function fixes subtitle's fps
+def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
+    scale = subtitles_fps / 23.979          # constant chosen empirically
 
-    scale = subtitles_fps / 24
-    line_pattern = r'\{(\d+)\}\{(\d+)\}(.*)'
-    scaled_lines = []
+    # Timecode pattern matching
+    timecode_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
 
-    for line in lines:
-        matches = re.match(line_pattern, line)
+    def time_to_ms(time_str):
+        """ Convert time string 'HH:MM:SS,SSS' to milliseconds """
+        h, m, s = map(int, time_str[:8].split(':'))
+        ms = int(time_str[9:])
+        return (h * 3600 + m * 60 + s) * 1000 + ms
 
-        start_frame = int(matches.group(1))
-        end_frame =  int(matches.group(2))
-        subtitle = matches.group(3)
+    def ms_to_time(ms):
+        """ Convert milliseconds to time string 'HH:MM:SS,SSS' """
+        h, remainder = divmod(ms, 3600000)
+        m, remainder = divmod(remainder, 60000)
+        s, ms = divmod(remainder, 1000)
+        return f"{h:02}:{m:02}:{s:02},{ms:03}"
 
-        scaled_start_frame = int(start_frame / scale)
-        scaled_end_frame = int(end_frame / scale)
+    with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
+        for line in infile:
+            match = timecode_pattern.match(line)
+            if match:
+                start_time, end_time = match.groups()
+                start_ms = time_to_ms(start_time)
+                end_ms = time_to_ms(end_time)
 
-        scaled_line = f"{{{scaled_start_frame}}}{{{scaled_end_frame}}}{subtitle}\n"
-        scaled_lines.append(scaled_line)
+                # Apply scaling
+                start_ms = int(start_ms / scale)
+                end_ms = int(end_ms / scale)
 
-    with open(result_path, 'w') as output_file:
-        output_file.writelines(scaled_lines)
+                # Convert back to time string
+                new_start_time = ms_to_time(start_ms)
+                new_end_time = ms_to_time(end_ms)
+
+                # Write the updated line
+                outfile.write(f"{new_start_time} --> {new_end_time}\n")
+            else:
+                # Write the line unchanged
+                outfile.write(line)
 
 
 def get_video_data(path: str) -> [VideoInfo]:
