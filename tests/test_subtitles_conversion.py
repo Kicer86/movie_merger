@@ -32,19 +32,16 @@ class SubtitlesConversion(unittest.TestCase):
                 content = subtitles_file.read()
                 stipped_content = content.strip()
 
-                expected_content = """
-                    1
-                    00:00:01,000 --> 00:00:02,000
-                    Hello World
-
-                    2
-                    00:00:04,000 --> 00:00:06,000
-                    This is some sample subtitle in english
-
-                    3
-                    00:00:06,000 --> 00:00:08,000
-                    THE END
-                """.strip()
+                expected_content = (
+                    "1\n"
+                    "00:00:01,000 --> 00:00:02,000\n"
+                    "Hello World\n\n"
+                    "2\n"
+                    "00:00:04,000 --> 00:00:06,000\n"
+                    "This is some sample subtitle in english\n\n"
+                    "3\n"
+                    "00:00:06,000 --> 00:00:08,000\n"
+                    "THE END").strip()
 
                 self.assertEqual(stipped_content, expected_content)
 
