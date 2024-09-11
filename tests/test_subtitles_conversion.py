@@ -10,13 +10,17 @@ from common import TestDataWorkingDirectory, list_files, add_test_media
 class SubtitlesConversion(unittest.TestCase):
 
     def test_nondefault_fps(self):
+
+        def generate_subtitles(path: str, length: int):
+            with open(path, "w") as sf:
+                for t in range(length):
+                    b = t * 60
+                    sf.write(f"{{{b}}}{{{b + 30}}}{t}\n")
+
+
         with TestDataWorkingDirectory() as td:
             add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
-
-            with open(os.path.join(td.path, "sea-waves.txt"), "w") as sf:
-                sf.write("{60}{120}Hello World\n")
-                sf.write("{240}{360}This is some sample subtitle in english\n")
-                sf.write("{360}{480}THE END\n")
+            generate_subtitles(os.path.join(td.path, "sea-waves.txt"), 25)
 
             twotone.run([td.path, "-l", "auto", "--no-dry-run"])
 
@@ -29,21 +33,18 @@ class SubtitlesConversion(unittest.TestCase):
             utils.start_process("ffmpeg", ["-i", video, "-map", "0:s:0", subtitles_path])
 
             with open(subtitles_path, mode='r') as subtitles_file:
-                content = subtitles_file.read()
-                stipped_content = content.strip()
+                ms_time = 0
+                for line in subtitles_file:
+                    match = utils.subrip_time_pattern.match(line.strip())
+                    if match:
+                        start_time, end_time = match.groups()
+                        start_ms = utils.time_to_ms(start_time)
+                        end_ms = utils.time_to_ms(end_time)
 
-                expected_content = (
-                    "1\n"
-                    "00:00:01,000 --> 00:00:02,000\n"
-                    "Hello World\n\n"
-                    "2\n"
-                    "00:00:04,000 --> 00:00:06,000\n"
-                    "This is some sample subtitle in english\n\n"
-                    "3\n"
-                    "00:00:06,000 --> 00:00:08,000\n"
-                    "THE END").strip()
-
-                self.assertEqual(stipped_content, expected_content)
+                        # one millisecond difference is acceptable (hence delta = 1)
+                        self.assertAlmostEqual(start_ms, ms_time, delta = 1)
+                        self.assertAlmostEqual(end_ms, ms_time + 500, delta = 1)
+                        ms_time += 1000
 
 
 if __name__ == '__main__':

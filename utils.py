@@ -17,7 +17,7 @@ ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
-
+subrip_time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
 
 def start_process(process: str, args: [str]) -> ProcessResult:
     command = [process]
@@ -84,29 +84,31 @@ def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
     return False
 
 
-# function fixes subtitle's fps
+def time_to_ms(time_str):
+    """ Convert time string 'HH:MM:SS,SSS' to milliseconds """
+    h, m, s = map(int, time_str[:8].split(':'))
+    ms = int(time_str[9:])
+    return (h * 3600 + m * 60 + s) * 1000 + ms
+
+
+def ms_to_time(ms):
+    """ Convert milliseconds to time string 'HH:MM:SS,SSS' """
+    h, remainder = divmod(ms, 3600000)
+    m, remainder = divmod(remainder, 60000)
+    s, ms = divmod(remainder, 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+
 def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
-    scale = subtitles_fps / 23.979          # constant chosen empirically
+    """ fix subtitle's fps """
+    scale = subtitles_fps / 23.976          # constant taken from https://trac.ffmpeg.org/ticket/3287
 
-    # Timecode pattern matching
-    timecode_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
-
-    def time_to_ms(time_str):
-        """ Convert time string 'HH:MM:SS,SSS' to milliseconds """
-        h, m, s = map(int, time_str[:8].split(':'))
-        ms = int(time_str[9:])
-        return (h * 3600 + m * 60 + s) * 1000 + ms
-
-    def ms_to_time(ms):
-        """ Convert milliseconds to time string 'HH:MM:SS,SSS' """
-        h, remainder = divmod(ms, 3600000)
-        m, remainder = divmod(remainder, 60000)
-        s, ms = divmod(remainder, 1000)
-        return f"{h:02}:{m:02}:{s:02},{ms:03}"
+    if abs(scale - 1) < 0.001:              # scale == 1? nothing to fix
+        return
 
     with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
         for line in infile:
-            match = timecode_pattern.match(line)
+            match = subrip_time_pattern.match(line)
             if match:
                 start_time, end_time = match.groups()
                 start_ms = time_to_ms(start_time)

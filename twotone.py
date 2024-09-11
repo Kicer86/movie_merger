@@ -132,7 +132,9 @@ class TwoTone:
             if status.returncode == 0:
                 # there is no way (as of now) to tell ffmpeg to convert subtitles with proper frame rate in mind.
                 # so here some naive conversion is being done
-                if video_fps != "24/1":
+                # see: https://trac.ffmpeg.org/ticket/10929
+                #      https://trac.ffmpeg.org/ticket/3287
+                if utils.is_subtitle_microdvd(subtitle):
                     fps = eval(video_fps)
 
                     # prepare new output file, and use previous one as new input
