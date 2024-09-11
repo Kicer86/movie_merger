@@ -2,6 +2,7 @@
 import cchardet
 import json
 import logging
+import math
 import os.path
 import re
 import subprocess
@@ -101,9 +102,9 @@ def ms_to_time(ms):
 
 def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     """ fix subtitle's fps """
-    scale = subtitles_fps / 23.976          # constant taken from https://trac.ffmpeg.org/ticket/3287
+    scale = subtitles_fps / 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
 
-    if abs(scale - 1) < 0.001:              # scale == 1? nothing to fix
+    if math.isclose(scale, 1, rel_tol = 0.001):         # scale == 1? nothing to fix
         return
 
     with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
