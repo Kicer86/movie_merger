@@ -2,6 +2,7 @@
 import cchardet
 import json
 import logging
+import math
 import os.path
 import re
 import subprocess
@@ -10,14 +11,14 @@ from itertools import islice
 from pathlib import Path
 
 Subtitle = namedtuple("Subtitle", "language default")
-VideoTrack = namedtuple("VideoTrack", "")
+VideoTrack = namedtuple("VideoTrack", "fps")
 VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
-
+subrip_time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
 
 def start_process(process: str, args: [str]) -> ProcessResult:
     command = [process]
@@ -74,6 +75,61 @@ def is_subtitle(file: str) -> bool:
     return False
 
 
+def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
+    with open(subtitle.path, 'r', encoding = subtitle.encoding) as text_file:
+        head = "".join(islice(text_file, 5)).strip()
+
+        if subtitle_format2.match(head):
+            return True
+
+    return False
+
+
+def time_to_ms(time_str):
+    """ Convert time string 'HH:MM:SS,SSS' to milliseconds """
+    h, m, s = map(int, time_str[:8].split(':'))
+    ms = int(time_str[9:])
+    return (h * 3600 + m * 60 + s) * 1000 + ms
+
+
+def ms_to_time(ms):
+    """ Convert milliseconds to time string 'HH:MM:SS,SSS' """
+    h, remainder = divmod(ms, 3600000)
+    m, remainder = divmod(remainder, 60000)
+    s, ms = divmod(remainder, 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+
+def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
+    """ fix subtitle's fps """
+    scale = subtitles_fps / 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
+
+    if math.isclose(scale, 1, rel_tol = 0.001):         # scale == 1? nothing to fix
+        return
+
+    with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
+        for line in infile:
+            match = subrip_time_pattern.match(line)
+            if match:
+                start_time, end_time = match.groups()
+                start_ms = time_to_ms(start_time)
+                end_ms = time_to_ms(end_time)
+
+                # Apply scaling
+                start_ms = int(start_ms / scale)
+                end_ms = int(end_ms / scale)
+
+                # Convert back to time string
+                new_start_time = ms_to_time(start_ms)
+                new_end_time = ms_to_time(end_ms)
+
+                # Write the updated line
+                outfile.write(f"{new_start_time} --> {new_end_time}\n")
+            else:
+                # Write the line unchanged
+                outfile.write(line)
+
+
 def get_video_data(path: str) -> [VideoInfo]:
     args = []
     args.extend(["-v", "quiet"])
@@ -96,12 +152,16 @@ def get_video_data(path: str) -> [VideoInfo]:
     for stream in output_json["streams"]:
         stream_type = stream["codec_type"]
         if stream_type == "subtitle":
-            tags = stream["tags"]
-            language = tags.get("language", None)
+            if "tags" in stream:
+                tags = stream["tags"]
+                language = tags.get("language", None)
+            else:
+                language = None
             is_default = stream["disposition"]["default"]
             subtitles.append(Subtitle(language, is_default))
         elif stream_type == "video":
-            video_tracks.append(VideoTrack())
+            fps = stream["r_frame_rate"]
+            video_tracks.append(VideoTrack(fps=fps))
 
     return VideoInfo(video_tracks, subtitles)
 
@@ -110,3 +170,24 @@ def split_path(path: str) -> (str, str, str):
     info = Path(path)
 
     return str(info.parent), info.stem, info.suffix[1:]
+
+
+def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
+    if len(lhs) != len(rhs):
+        return False
+
+    for lhs_item, rhs_item in zip(lhs, rhs):
+        lhs_fps = eval(lhs_item.fps)
+        rhs_fps = eval(rhs_item.fps)
+
+        if lhs_fps == rhs_fps:
+            return True
+
+        diff = abs(lhs_fps - rhs_fps)
+
+        # For videos with fps 1000000/33333 (≈30fps) mkvmerge generates video with 30/1 fps.
+        # I'm not sure it this is acceptable but at this moment let it be
+        if diff > 0.0005:
+            return False
+
+    return True

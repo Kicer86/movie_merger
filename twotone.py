@@ -118,18 +118,32 @@ class TwoTone:
 
         return subtitles_sorted
 
-    def _convert_subtitle(self, subtitle: Subtitle) -> [Subtitle]:
+    def _convert_subtitle(self, video_fps: str, subtitle: Subtitle) -> [Subtitle]:
         converted_subtitle = subtitle
 
         if not self.dry_run:
+            input_file = subtitle.path
             output_file = self._get_temporary_file("srt")
             encoding = subtitle.encoding if subtitle.encoding != "UTF-8-SIG" else "utf-8"
 
             status = utils.start_process("ffmpeg",
-                                         ["-hide_banner", "-y", "-sub_charenc", encoding, "-i", subtitle.path, output_file])
+                                         ["-hide_banner", "-y", "-sub_charenc", encoding, "-i", input_file, output_file])
 
+            if status.returncode == 0:
+                # there is no way (as of now) to tell ffmpeg to convert subtitles with proper frame rate in mind.
+                # so here some naive conversion is being done
+                # see: https://trac.ffmpeg.org/ticket/10929
+                #      https://trac.ffmpeg.org/ticket/3287
+                if utils.is_subtitle_microdvd(subtitle):
+                    fps = eval(video_fps)
 
-            if status.returncode != 0:
+                    # prepare new output file, and use previous one as new input
+                    input_file = output_file
+                    output_file = self._get_temporary_file("srt")
+
+                    utils.fix_subtitles_fps(input_file, output_file, fps)
+
+            else:
                 raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
             converted_subtitle = Subtitle(output_file, subtitle.language, "utf-8")
@@ -178,7 +192,10 @@ class TwoTone:
             self._register_input(subtitle.path)
 
             # Subtitles are buggy sometimes, use ffmpeg to fix them.
-            converted_subtitle = self._convert_subtitle(subtitle)
+            # Also makemkv does not handle MicroDVD subtitles, so convert all to SubRip.
+
+            fps = input_file_details.video_tracks[0].fps
+            converted_subtitle = self._convert_subtitle(fps, subtitle)
 
             lang = subtitle.language
             if lang and lang != "":
@@ -210,7 +227,7 @@ class TwoTone:
             # validate output file correctness
             output_file_details = utils.get_video_data(output_video)
 
-            if input_file_details.video_tracks != output_file_details.video_tracks or \
+            if not utils.compare_videos(input_file_details.video_tracks, output_file_details.video_tracks) or \
                     len(input_file_details.subtitles) + len(sorted_subtitles) != len(output_file_details.subtitles):
                 logging.error("Output file seems to be corrupted")
                 raise RuntimeError(f"{cmd} created a corrupted file")
