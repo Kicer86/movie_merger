@@ -10,8 +10,8 @@ from collections import namedtuple
 from itertools import islice
 from pathlib import Path
 
-Subtitle = namedtuple("Subtitle", "language default")
-VideoTrack = namedtuple("VideoTrack", "fps")
+Subtitle = namedtuple("Subtitle", "language default length tid")
+VideoTrack = namedtuple("VideoTrack", "fps length")
 VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 
@@ -19,6 +19,9 @@ subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
 subrip_time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+
+ffmpeg_default_fps = 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
+
 
 def start_process(process: str, args: [str]) -> ProcessResult:
     command = [process]
@@ -87,9 +90,12 @@ def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
 
 def time_to_ms(time_str):
     """ Convert time string 'HH:MM:SS,SSS' to milliseconds """
-    h, m, s = map(int, time_str[:8].split(':'))
-    ms = int(time_str[9:])
+    h, m, s, ms = map(lambda x: int(x[:3]), re.split(r'[:.,]', time_str))
     return (h * 3600 + m * 60 + s) * 1000 + ms
+
+
+def time_to_s(time: str):
+    return time_to_ms(time) / 1000
 
 
 def ms_to_time(ms):
@@ -97,12 +103,15 @@ def ms_to_time(ms):
     h, remainder = divmod(ms, 3600000)
     m, remainder = divmod(remainder, 60000)
     s, ms = divmod(remainder, 1000)
-    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+    return f"{int(h):02}:{int(m):02}:{int(s):02},{int(ms):03}"
+
+def fps_str_to_float(fps: str) -> float:
+    return eval(fps)
 
 
 def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     """ fix subtitle's fps """
-    scale = subtitles_fps / 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
+    scale = subtitles_fps / ffmpeg_default_fps
 
     if math.isclose(scale, 1, rel_tol = 0.001):         # scale == 1? nothing to fix
         return
@@ -131,6 +140,20 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
 
 
 def get_video_data(path: str) -> [VideoInfo]:
+
+    def get_length(stream):
+
+        length = None
+
+        if "tags" in stream:
+            tags = stream["tags"]
+            length = time_to_ms(tags.get("DURATION", None))
+
+        if length is None:
+            length = float(stream.get("duration", None))
+
+        return length
+
     args = []
     args.extend(["-v", "quiet"])
     args.extend(["-print_format", "json"])
@@ -158,10 +181,15 @@ def get_video_data(path: str) -> [VideoInfo]:
             else:
                 language = None
             is_default = stream["disposition"]["default"]
-            subtitles.append(Subtitle(language, is_default))
+            length = get_length(stream)
+            tid = stream["index"]
+
+            subtitles.append(Subtitle(language, default=is_default, length=length, tid=tid))
         elif stream_type == "video":
             fps = stream["r_frame_rate"]
-            video_tracks.append(VideoTrack(fps=fps))
+            length = get_length(stream)
+
+            video_tracks.append(VideoTrack(fps=fps, length=length))
 
     return VideoInfo(video_tracks, subtitles)
 
@@ -186,7 +214,7 @@ def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
         diff = abs(lhs_fps - rhs_fps)
 
         # For videos with fps 1000000/33333 (≈30fps) mkvmerge generates video with 30/1 fps.
-        # I'm not sure it this is acceptable but at this moment let it be
+        # I'm not sure if this is acceptable but at this moment let it be
         if diff > 0.0005:
             return False
 
