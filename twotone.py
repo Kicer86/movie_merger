@@ -13,7 +13,7 @@ from pathlib import Path
 
 import utils
 
-Subtitle = namedtuple("Subtitle", "path language encoding")
+
 work = True
 
 
@@ -44,13 +44,13 @@ class TwoTone:
 
         self.to_be_removed.clear()
 
-    def _build_subtitle_from_path(self, path: str) -> Subtitle:
+    def _build_subtitle_from_path(self, path: str) -> utils.SubtitleFile:
         encoding = utils.file_encoding(path)
         language = self.language if self.language != "auto" else self._guess_language(path, encoding)
 
-        return Subtitle(path, language, encoding)
+        return utils.SubtitleFile(path, language, encoding)
 
-    def _simple_subtitle_search(self, path: str) -> [Subtitle]:
+    def _simple_subtitle_search(self, path: str) -> [utils.SubtitleFile]:
         video_name = Path(path).stem
         directory = Path(path).parent
 
@@ -65,7 +65,7 @@ class TwoTone:
 
         return subtitles
 
-    def _recursive_subtitle_search(self, path: str) -> [Subtitle]:
+    def _recursive_subtitle_search(self, path: str) -> [utils.SubtitleFile]:
         found_subtitles = []
         found_subdirs = []
 
@@ -90,7 +90,7 @@ class TwoTone:
 
         return subtitles
 
-    def _aggressive_subtitle_search(self, path: str) -> [Subtitle]:
+    def _aggressive_subtitle_search(self, path: str) -> [utils.SubtitleFile]:
         subtitles = self._simple_subtitle_search(path)
         directory = Path(path).parent
 
@@ -111,14 +111,14 @@ class TwoTone:
         except ValueError:
             return len(l)
 
-    def _sort_subtitles(self, subtitles: [Subtitle]) -> [Subtitle]:
+    def _sort_subtitles(self, subtitles: [utils.SubtitleFile]) -> [utils.SubtitleFile]:
         priorities = self.lang_priority.copy()
         priorities.append(None)
         subtitles_sorted = sorted(subtitles, key=lambda s: self._get_index_for(priorities, s.language))
 
         return subtitles_sorted
 
-    def _convert_subtitle(self, video_fps: str, subtitle: Subtitle) -> [Subtitle]:
+    def _convert_subtitle(self, video_fps: str, subtitle: utils.SubtitleFile) -> [utils.SubtitleFile]:
         converted_subtitle = subtitle
 
         if not self.dry_run:
@@ -146,7 +146,7 @@ class TwoTone:
             else:
                 raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
-            converted_subtitle = Subtitle(output_file, subtitle.language, "utf-8")
+            converted_subtitle = utils.SubtitleFile(output_file, subtitle.language, "utf-8")
 
         return converted_subtitle
 
@@ -161,7 +161,7 @@ class TwoTone:
 
         return result
 
-    def _merge(self, input_video: str, subtitles: [str]):
+    def _merge(self, input_video: str, subtitles: [utils.SubtitleFile]):
         logging.info(f"Video file: {input_video}")
 
         video_dir, video_name, video_extension = utils.split_path(input_video)
@@ -176,17 +176,13 @@ class TwoTone:
             output_video = video_dir + "/" + video_name + "." + str(i) + "." + "mkv"
             i += 1
 
-        # output
-        options = ["-o", output_video]
-
-        # set input
-        options.append(input_video)
+        # register input for removal
         self._register_input(input_video)
 
         # set subtitles and languages
         sorted_subtitles = self._sort_subtitles(subtitles)
 
-        default = True
+        prepared_subtitles = []
         for subtitle in sorted_subtitles:
             logging.info(f"\tadd subtitles [{subtitle.language}]: {subtitle.path}")
             self._register_input(subtitle.path)
@@ -197,40 +193,12 @@ class TwoTone:
             fps = input_file_details.video_tracks[0].fps
             converted_subtitle = self._convert_subtitle(fps, subtitle)
 
-            lang = subtitle.language
-            if lang and lang != "":
-                options.extend(["--language", f"0:{lang}"])
-
-            if default:
-                options.extend(["--default-track", "0:yes"])
-                default = False
-            else:
-                options.extend(["--default-track", "0:no"])
-
-            options.append(converted_subtitle.path)
+            prepared_subtitles.append(converted_subtitle)
 
         # perform
         logging.info("\tMerge in progress...")
         if not self.dry_run:
-            cmd = "mkvmerge"
-            result = utils.start_process(cmd, options)
-
-            if result.returncode != 0:
-                if os.path.exists(output_video):
-                    os.remove(output_video)
-                raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
-
-            if not os.path.exists(output_video):
-                logging.error("Output file was not created")
-                raise RuntimeError(f"{cmd} did not create output file")
-
-            # validate output file correctness
-            output_file_details = utils.get_video_data(output_video)
-
-            if not utils.compare_videos(input_file_details.video_tracks, output_file_details.video_tracks) or \
-                    len(input_file_details.subtitles) + len(sorted_subtitles) != len(output_file_details.subtitles):
-                logging.error("Output file seems to be corrupted")
-                raise RuntimeError(f"{cmd} created a corrupted file")
+            utils.generate_mkv(input_video=input_video, output_path=output_video, subtitles=prepared_subtitles)
 
         # Remove all inputs and temporary files. Only output file should left
         self._remove()

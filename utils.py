@@ -10,9 +10,10 @@ from collections import namedtuple
 from itertools import islice
 from pathlib import Path
 
+SubtitleFile = namedtuple("Subtitle", "path language encoding")
 Subtitle = namedtuple("Subtitle", "language default length tid")
 VideoTrack = namedtuple("VideoTrack", "fps length")
-VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles")
+VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles path")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
@@ -105,6 +106,7 @@ def ms_to_time(ms):
     s, ms = divmod(remainder, 1000)
     return f"{int(h):02}:{int(m):02}:{int(s):02},{int(ms):03}"
 
+
 def fps_str_to_float(fps: str) -> float:
     return eval(fps)
 
@@ -147,7 +149,9 @@ def get_video_data(path: str) -> [VideoInfo]:
 
         if "tags" in stream:
             tags = stream["tags"]
-            length = time_to_ms(tags.get("DURATION", None))
+            duration = tags.get("DURATION", None)
+            if duration is not None:
+                length = time_to_ms(duration)
 
         if length is None:
             length = float(stream.get("duration", None))
@@ -191,13 +195,58 @@ def get_video_data(path: str) -> [VideoInfo]:
 
             video_tracks.append(VideoTrack(fps=fps, length=length))
 
-    return VideoInfo(video_tracks, subtitles)
+    return VideoInfo(video_tracks, subtitles, path)
 
 
 def split_path(path: str) -> (str, str, str):
     info = Path(path)
 
     return str(info.parent), info.stem, info.suffix[1:]
+
+
+def generate_mkv(input_video: str, output_path: str, subtitles: [SubtitleFile]):
+    # output
+    options = ["-o", output_path]
+
+    # set input
+    options.append(input_video)
+
+    # set subtitles and languages
+    for i in range(len(subtitles)):
+        subtitle = subtitles[i]
+        lang = subtitle.language
+
+        if lang and lang != "":
+            options.extend(["--language", f"0:{lang}"])
+
+        if i == 0:
+            options.extend(["--default-track", "0:yes"])
+        else:
+            options.extend(["--default-track", "0:no"])
+
+        options.append(subtitle.path)
+
+    # perform
+    cmd = "mkvmerge"
+    result = start_process(cmd, options)
+
+    if result.returncode != 0:
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
+
+    if not os.path.exists(output_path):
+        logging.error("Output file was not created")
+        raise RuntimeError(f"{cmd} did not create output file")
+
+    # validate output file correctness
+    output_file_details = get_video_data(output_path)
+    input_file_details = get_video_data(input_video)
+
+    if not compare_videos(input_file_details.video_tracks, output_file_details.video_tracks) or \
+            len(input_file_details.subtitles) + len(subtitles) != len(output_file_details.subtitles):
+        logging.error("Output file seems to be corrupted")
+        raise RuntimeError("mkvmerge created a corrupted file")
 
 
 def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
