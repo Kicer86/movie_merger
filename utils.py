@@ -140,6 +140,25 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
                 # Write the line unchanged
                 outfile.write(line)
 
+def get_video_full_info(path: str) -> str:
+    args = []
+    args.extend(["-v", "quiet"])
+    args.extend(["-print_format", "json"])
+    args.append("-show_format")
+    args.append("-show_streams")
+    args.append(path)
+
+    process = start_process("ffprobe", args)
+
+    if process.returncode != 0:
+        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
+
+    output_lines = process.stdout
+    output_str = output_lines.decode('utf8')
+    output_json = json.loads(output_lines)
+
+    return output_json
+
 
 def get_video_data(path: str) -> [VideoInfo]:
 
@@ -158,21 +177,7 @@ def get_video_data(path: str) -> [VideoInfo]:
 
         return length
 
-    args = []
-    args.extend(["-v", "quiet"])
-    args.extend(["-print_format", "json"])
-    args.append("-show_format")
-    args.append("-show_streams")
-    args.append(path)
-
-    process = start_process("ffprobe", args)
-
-    if process.returncode != 0:
-        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
-
-    output_lines = process.stdout
-    output_str = output_lines.decode('utf8')
-    output_json = json.loads(output_lines)
+    output_json = get_video_full_info(path)
 
     subtitles = []
     video_tracks = []
