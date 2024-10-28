@@ -14,12 +14,14 @@ class Fixer:
     def __init__(self):
         self._work = True
 
-    def _extract_all_subtitles(self, video_file: str, subtitles: [utils.Subtitle], wd: str) -> [str]:
+    def _extract_all_subtitles(self, video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
         for subtitle in subtitles:
             outputfile = f"{wd}/{subtitle.tid}.srt"
             utils.start_process("mkvextract", ["tracks", video_file, f"{subtitle.tid}:{outputfile}"])
-            result.append(outputfile)
+
+            subtitleFile = utils.SubtitleFile(path=outputfile, language=subtitle.language, encoding="utf8")
+            result.append(subtitleFile)
 
         return result
 
@@ -63,16 +65,37 @@ class Fixer:
                 broken_subtitiles.append(i)
 
         if len(broken_subtitiles) == 0:
+            logging.debug("No issues found")
             return
 
+        logging.info("Issues found, fixing subtitles")
         with tempfile.TemporaryDirectory() as wd_dir:
             subtitles = self._extract_all_subtitles(video_file, video_info.subtitles, wd_dir)
             broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
 
             for broken_subtitile in broken_subtitles_paths:
-                self._fix_subtitle(broken_subtitile, utils.fps_str_to_float(video_info.video_tracks[0].fps))
+                self._fix_subtitle(broken_subtitile.path, utils.fps_str_to_float(video_info.video_tracks[0].fps))
 
+            # remove all subtitles from video
+            logging.debug("Removing existing subtitles from file")
+            video_without_subtitles = video_file + ".nosubtitles.mkv"
+            utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
 
+            # add fixed subtitles to video
+            logging.debug("Adding fixed subtitles to file")
+            temporaryVideoPath = video_file + ".fixed.mkv"
+            utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
+
+            #validate generated file
+            logging.debug("Validating correctness of new file")
+            input_video_details = utils.get_video_full_info(video_file)
+            output_video_details = utils.get_video_full_info(temporaryVideoPath)
+
+            if input_video_details != output_video_details:
+                raise RuntimeError("Video details after fixing subtitles are not the same as original")
+
+            # overwrite broken video with fixed one
+            #shutil.move(temporaryVideoPath, video_file)
 
     def _process_dir(self, path: str):
         video_files = []
@@ -119,6 +142,7 @@ def run(sys_args: [str]):
     logging.info("Searching for broken files")
     fixer = Fixer()
     fixer.process_dir(args.videos_path[0])
+    logging.info("Done")
 
 
 if __name__ == '__main__':
@@ -128,5 +152,3 @@ if __name__ == '__main__':
     except RuntimeError as e:
         logging.error(f"Unexpected error occurred: {e}. Terminating")
         exit(1)
-
-    logging.info("Done")
