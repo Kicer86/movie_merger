@@ -16,12 +16,16 @@ class Fixer:
 
     def _extract_all_subtitles(self, video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
+        options = ["tracks", video_file]
+
         for subtitle in subtitles:
             outputfile = f"{wd}/{subtitle.tid}.srt"
-            utils.start_process("mkvextract", ["tracks", video_file, f"{subtitle.tid}:{outputfile}"])
-
             subtitleFile = utils.SubtitleFile(path=outputfile, language=subtitle.language, encoding="utf8")
+
             result.append(subtitleFile)
+            options.append(f"{subtitle.tid}:{outputfile}")
+
+        utils.start_process("mkvextract", options)
 
         return result
 
@@ -70,6 +74,7 @@ class Fixer:
 
         logging.info("Issues found, fixing subtitles")
         with tempfile.TemporaryDirectory() as wd_dir:
+            logging.debug("Extracting subtitles from file")
             subtitles = self._extract_all_subtitles(video_file, video_info.subtitles, wd_dir)
             broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
 
@@ -86,16 +91,11 @@ class Fixer:
             temporaryVideoPath = video_file + ".fixed.mkv"
             utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
 
-            #validate generated file
-            logging.debug("Validating correctness of new file")
-            input_video_details = utils.get_video_full_info(video_file)
-            output_video_details = utils.get_video_full_info(temporaryVideoPath)
-
-            if input_video_details != output_video_details:
-                raise RuntimeError("Video details after fixing subtitles are not the same as original")
-
             # overwrite broken video with fixed one
-            #shutil.move(temporaryVideoPath, video_file)
+            os.replace(temporaryVideoPath, video_file)
+
+            # remove temporary file
+            os.remove(video_without_subtitles)
 
     def _process_dir(self, path: str):
         video_files = []
