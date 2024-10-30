@@ -106,7 +106,7 @@ class Fixer:
             logging.debug("No issues found")
             return
 
-        logging.info("Issues found")
+        logging.info(f"Issues found in {video_file}")
         self._fixStrategy(video_info, broken_subtitiles)
 
     def _process_dir(self, path: str):
