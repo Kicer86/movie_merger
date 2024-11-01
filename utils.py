@@ -259,8 +259,8 @@ def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
         return False
 
     for lhs_item, rhs_item in zip(lhs, rhs):
-        lhs_fps = eval(lhs_item.fps)
-        rhs_fps = eval(rhs_item.fps)
+        lhs_fps = fps_str_to_float(lhs_item.fps)
+        rhs_fps = fps_str_to_float(rhs_item.fps)
 
         if lhs_fps == rhs_fps:
             return True
