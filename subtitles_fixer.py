@@ -94,6 +94,10 @@ class Fixer:
         video_info = utils.get_video_data(video_file)
         video_length = video_info.video_tracks[0].length
 
+        if video_length is None:
+            logging.warning(f"File {video_file} has unknown lenght. Cannot proceed.")
+            return
+
         broken_subtitiles = []
 
         for i in range(len(video_info.subtitles)):

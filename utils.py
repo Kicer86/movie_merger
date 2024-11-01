@@ -173,7 +173,9 @@ def get_video_data(path: str) -> [VideoInfo]:
                 length = time_to_ms(duration)
 
         if length is None:
-            length = float(stream.get("duration", None))
+            length = stream.get("duration", None)
+            if length is not None:
+                length = float(length)
 
         return length
 
