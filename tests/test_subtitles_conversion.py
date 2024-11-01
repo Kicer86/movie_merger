@@ -4,23 +4,16 @@ import unittest
 
 import twotone
 import utils
-from common import TestDataWorkingDirectory, list_files, add_test_media
+from common import TestDataWorkingDirectory, list_files, add_test_media, generate_microdvd_subtitles
 
 
 class SubtitlesConversion(unittest.TestCase):
 
     def test_nondefault_fps(self):
 
-        def generate_subtitles(path: str, length: int):
-            with open(path, "w") as sf:
-                for t in range(length):
-                    b = t * 60
-                    sf.write(f"{{{b}}}{{{b + 30}}}{t}\n")
-
-
         with TestDataWorkingDirectory() as td:
             add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
-            generate_subtitles(os.path.join(td.path, "sea-waves.txt"), 25)
+            generate_microdvd_subtitles(os.path.join(td.path, "sea-waves.txt"), 25)
 
             twotone.run([td.path, "-l", "auto", "--no-dry-run"])
 

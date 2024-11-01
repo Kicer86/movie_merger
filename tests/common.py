@@ -76,3 +76,11 @@ def hashes(path: str) -> [()]:
             results.append((filepath, file_hash.hexdigest()))
 
     return results
+
+
+def generate_microdvd_subtitles(path: str, length: int, fps: float = 60):
+    with open(path, "w") as sf:
+        for t in range(length):
+            b = int(t * fps)
+            e = int(b + fps/2)
+            sf.write(f"{{{b}}}{{{e}}}{t}\n")
