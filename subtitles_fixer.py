@@ -17,6 +17,11 @@ def print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
         logging.info(f"{len(broken_video[1])} broken subtitle(s) in {broken_video[0].path} found")
 
 
+def dry_run_strategy(broken_videos_info: [(utils.VideoInfo, [int])]):
+    print_broken_videos(broken_videos_info)
+    logging.info("Dry run - not fixing")
+
+
 class DefaultFixStrategy:
     def _extract_all_subtitles(self,video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
@@ -90,11 +95,6 @@ class DefaultFixStrategy:
 
                     # remove temporary file
                     os.remove(video_without_subtitles)
-
-
-def dry_run_strategy(broken_videos_info: [(utils.VideoInfo, [int])]):
-    print_broken_videos(broken_videos_info)
-    logging.info("Dry run - not fixing")
 
 
 class Fixer:
