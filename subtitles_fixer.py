@@ -6,11 +6,14 @@ import re
 import shutil
 import sys
 import tempfile
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 import utils
 
 
 def print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
+    logging.info(f"Found {len(broken_videos_info)} broken videos:")
     for broken_video in broken_videos_info:
         logging.info(f"{len(broken_video[1])} broken subtitle(s) in {broken_video[0].path} found")
 
@@ -53,43 +56,42 @@ def fix_subtitle(broken_subtitle, target_fps):
 
 
 def default_fix_strategy(broken_videos_info: [(utils.VideoInfo, [int])]):
-    logging.info("List of found broken videos:")
     print_broken_videos(broken_videos_info)
     logging.info("Fixing videos")
 
-    for broken_video in broken_videos_info:
-        video_info = broken_video[0]
-        broken_subtitiles = broken_video[1]
+    with logging_redirect_tqdm():
+        for broken_video in tqdm(broken_videos_info, desc="Processing", leave=False, disable=not sys.stdout.isatty()):
+            video_info = broken_video[0]
+            broken_subtitiles = broken_video[1]
 
-        with tempfile.TemporaryDirectory() as wd_dir:
-            video_file = video_info.path
-            logging.info(f"Fixing subtitles in file {video_file}")
-            logging.debug("Extracting subtitles from file")
-            subtitles = extract_all_subtitles(video_file, video_info.subtitles, wd_dir)
-            broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
+            with tempfile.TemporaryDirectory() as wd_dir:
+                video_file = video_info.path
+                logging.info(f"Fixing subtitles in file {video_file}")
+                logging.debug("Extracting subtitles from file")
+                subtitles = extract_all_subtitles(video_file, video_info.subtitles, wd_dir)
+                broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
 
-            for broken_subtitile in broken_subtitles_paths:
-                fix_subtitle(broken_subtitile.path, utils.fps_str_to_float(video_info.video_tracks[0].fps))
+                for broken_subtitile in broken_subtitles_paths:
+                    fix_subtitle(broken_subtitile.path, utils.fps_str_to_float(video_info.video_tracks[0].fps))
 
-            # remove all subtitles from video
-            logging.debug("Removing existing subtitles from file")
-            video_without_subtitles = video_file + ".nosubtitles.mkv"
-            utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
+                # remove all subtitles from video
+                logging.debug("Removing existing subtitles from file")
+                video_without_subtitles = video_file + ".nosubtitles.mkv"
+                utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
 
-            # add fixed subtitles to video
-            logging.debug("Adding fixed subtitles to file")
-            temporaryVideoPath = video_file + ".fixed.mkv"
-            utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
+                # add fixed subtitles to video
+                logging.debug("Adding fixed subtitles to file")
+                temporaryVideoPath = video_file + ".fixed.mkv"
+                utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
 
-            # overwrite broken video with fixed one
-            os.replace(temporaryVideoPath, video_file)
+                # overwrite broken video with fixed one
+                os.replace(temporaryVideoPath, video_file)
 
-            # remove temporary file
-            os.remove(video_without_subtitles)
+                # remove temporary file
+                os.remove(video_without_subtitles)
 
 
 def dry_run_strategy(broken_videos_info: [(utils.VideoInfo, [int])]):
-    logging.info("List of found broken videos:")
     print_broken_videos(broken_videos_info)
     logging.info("Dry run - not fixing")
 
