@@ -102,7 +102,7 @@ class Fixer:
         self._work = True
         self._fixStrategy = fixStrategy
 
-    def _process_video(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
+    def _check_if_broken(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
         logging.debug(f"Processing file {video_file}")
 
         def diff(a, b):
@@ -140,7 +140,7 @@ class Fixer:
                 broken_videos.extend(self._process_dir(entry.path))
 
         for video_file in video_files:
-            broken_video = self._process_video(video_file)
+            broken_video = self._check_if_broken(video_file)
             if broken_video is not None:
                 broken_videos.append(broken_video)
 
