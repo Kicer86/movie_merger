@@ -23,7 +23,11 @@ def create_broken_video(output_video_path: str, input_video: str):
         subtitle_path = f"{subtitle_dir}/sub.sub"
         generate_microdvd_subtitles(subtitle_path, int(length), fps)
 
-        utils.start_process("ffmpeg", ["-hide_banner", "-i", input_video, "-i", subtitle_path, "-map", "0", "-map", "1", "-c:v", "copy", "-c:a", "copy", output_video_path])
+        # convert to srt format
+        srt_subtitle_path = f"{subtitle_dir}/sub.srt"
+        status = utils.start_process("ffmpeg", ["-hide_banner", "-y", "-i", subtitle_path, srt_subtitle_path])
+
+        utils.generate_mkv(input_video, output_video_path, [utils.SubtitleFile(srt_subtitle_path, "eng", "utf8")])
 
 
 class SubtitlesFixer(unittest.TestCase):
