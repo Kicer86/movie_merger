@@ -19,7 +19,7 @@ ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
 subtitle_format2 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
 microdvd_time_pattern = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
-subrip_time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+subrip_time_pattern = re.compile(r'(\d+:\d{2}:\d{2},\d{3}) --> (\d+:\d{2}:\d{2},\d{3})')
 
 ffmpeg_default_fps = 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
 
