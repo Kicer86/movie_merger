@@ -104,7 +104,7 @@ class SubtitlesFixer:
         logging.info("Fixing videos")
 
         with logging_redirect_tqdm():
-            for broken_video in tqdm(broken_videos_info, desc="Working", leave=False, disable=not sys.stdout.isatty()):
+            for broken_video in tqdm(broken_videos_info, desc="Working", leave=False, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
                 video_info = broken_video[0]
                 broken_subtitiles = broken_video[1]
 
