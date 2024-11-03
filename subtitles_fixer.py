@@ -17,12 +17,12 @@ def print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
         logging.info(f"{len(broken_video[1])} broken subtitle(s) in {broken_video[0].path} found")
 
 
-def dry_run_strategy(broken_videos_info: [(utils.VideoInfo, [int])]):
+def dry_run_action(broken_videos_info: [(utils.VideoInfo, [int])]):
     print_broken_videos(broken_videos_info)
     logging.info("Dry run - not fixing")
 
 
-class DefaultFixStrategy:
+class SubtitlesFixer:
     def _extract_all_subtitles(self,video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
         options = ["tracks", video_file]
@@ -98,9 +98,9 @@ class DefaultFixStrategy:
 
 
 class Fixer:
-    def __init__(self, fixStrategy):
+    def __init__(self, fix_action):
         self._work = True
-        self._fixStrategy = fixStrategy
+        self._fix = fix_action
 
     def _check_if_broken(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
         logging.debug(f"Processing file {video_file}")
@@ -149,7 +149,7 @@ class Fixer:
     def process_dir(self, path: str):
         broken_videos = self._process_dir(path)
 
-        self._fixStrategy(broken_videos)
+        self._fix(broken_videos)
 
     def stop(self):
         self._work = False
@@ -180,7 +180,7 @@ def run(sys_args: [str]):
             logging.debug(f"{tool} path: {path}")
 
     logging.info("Searching for broken files")
-    fixer = Fixer(DefaultFixStrategy() if args.no_dry_run else dry_run_strategy)
+    fixer = Fixer(SubtitlesFixer() if args.no_dry_run else dry_run_action)
     fixer.process_dir(args.videos_path[0])
     logging.info("Done")
 
