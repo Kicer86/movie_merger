@@ -23,6 +23,66 @@ def dry_run_action(broken_videos_info: [(utils.VideoInfo, [int])]):
 
 
 class SubtitlesFixer:
+
+    def _no_resolver(self, video_track: utils.VideoTrack, content: str):
+        logging.error("Cannot fix the file, no idea how to do it.")
+        return None
+
+    def _long_tail_resolver(self, video_track: utils.VideoTrack, content: str):
+        return None
+
+    def _fps_scale_resolver(self, video_track: utils.VideoTrack, content: str):
+        target_fps = utils.fps_str_to_float(video_track.fps)
+        multiplier = utils.ffmpeg_default_fps / target_fps
+
+        def multiply_time(match):
+            time_from, time_to = map(utils.time_to_ms, match.groups())
+            time_from *= multiplier
+            time_to *= multiplier
+
+            time_from_srt = utils.ms_to_time(time_from)
+            time_to_srt = utils.ms_to_time(time_to)
+
+            return f"{time_from_srt} --> {time_to_srt}"
+
+        utils.subrip_time_pattern.sub(multiply_time, content)
+
+        return content
+
+
+    def _get_resolver(self, content: str, video_length: int):
+        timestamps = list(utils.subrip_time_pattern.finditer(content))
+        if len(timestamps) == 0:
+            return self._no_resolver
+
+        # check if last subtitle is beyond limit
+        last_timestamp = timestamps[-1]
+        time_from, time_to = map(utils.time_to_ms, last_timestamp.groups())
+
+        if time_from < video_length and time_to > video_length:
+            return self._long_tail_resolver
+
+        if time_from > video_length and time_to > video_length:
+            return self._fps_scale_resolver()
+
+        return self._no_resolver
+
+    def _fix_subtitle(self, broken_subtitle, video_info: utils.VideoInfo):
+        video_track = video_info.video_tracks[0]
+
+        with open(broken_subtitle, 'r', encoding='utf-8') as file:
+            content = file.read()
+
+        # figure out what is broken
+        resolver = self._get_resolver(content, video_track.length)
+
+        new_content = resolver(video_track, content)
+
+        if new_content is not None:
+            with open(broken_subtitle, 'w', encoding='utf-8') as file:
+                file.write(new_content)
+
+
     def _extract_all_subtitles(self,video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
         options = ["tracks", video_file]
@@ -37,28 +97,6 @@ class SubtitlesFixer:
         utils.start_process("mkvextract", options)
 
         return result
-
-
-    def _fix_subtitle(self, broken_subtitle, target_fps):
-        multiplier = utils.ffmpeg_default_fps / target_fps
-
-        def multiply_time(match):
-            time_from, time_to = map(utils.time_to_ms, match.groups())
-            time_from *= multiplier
-            time_to *= multiplier
-
-            time_from_srt = utils.ms_to_time(time_from)
-            time_to_srt = utils.ms_to_time(time_to)
-
-            return f"{time_from_srt} --> {time_to_srt}"
-
-        with open(broken_subtitle, 'r', encoding='utf-8') as file:
-            content = file.read()
-
-        new_content = utils.subrip_time_pattern.sub(multiply_time, content)
-
-        with open(broken_subtitle, 'w', encoding='utf-8') as file:
-            file.write(new_content)
 
 
     def __call__(self, broken_videos_info: [(utils.VideoInfo, [int])]):
@@ -78,7 +116,7 @@ class SubtitlesFixer:
                     broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
 
                     for broken_subtitile in broken_subtitles_paths:
-                        self._fix_subtitle(broken_subtitile.path, utils.fps_str_to_float(video_info.video_tracks[0].fps))
+                        self._fix_subtitle(broken_subtitile.path, video_info)
 
                     # remove all subtitles from video
                     logging.debug("Removing existing subtitles from file")
