@@ -63,7 +63,7 @@ class SubtitlesFixer:
             return self._long_tail_resolver
 
         if time_from > video_length and time_to > video_length:
-            return self._fps_scale_resolver()
+            return self._fps_scale_resolver
 
         return self._no_resolver
 
