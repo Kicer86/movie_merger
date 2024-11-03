@@ -17,8 +17,8 @@ VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles path")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
-subtitle_format2 = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
-subtitle_format3 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
+subtitle_format2 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
+microdvd_time_pattern = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
 subrip_time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
 
 ffmpeg_default_fps = 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
@@ -70,7 +70,7 @@ def is_subtitle(file: str) -> bool:
             with open(file, 'r', encoding = encoding) as text_file:
                 head = "".join(islice(text_file, 5)).strip()
 
-                for subtitle_format in [subtitle_format1, subtitle_format2, subtitle_format3]:
+                for subtitle_format in [subtitle_format1, microdvd_time_pattern, subtitle_format2]:
                     if subtitle_format.match(head):
                         logging.debug("\tSubtitle format detected")
                         return True
@@ -83,7 +83,7 @@ def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
     with open(subtitle.path, 'r', encoding = subtitle.encoding) as text_file:
         head = "".join(islice(text_file, 5)).strip()
 
-        if subtitle_format2.match(head):
+        if microdvd_time_pattern.match(head):
             return True
 
     return False
