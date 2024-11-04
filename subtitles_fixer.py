@@ -67,7 +67,7 @@ class SubtitlesFixer:
 
         return self._no_resolver
 
-    def _fix_subtitle(self, broken_subtitle, video_info: utils.VideoInfo):
+    def _fix_subtitle(self, broken_subtitle, video_info: utils.VideoInfo) -> bool:
         video_track = video_info.video_tracks[0]
 
         with open(broken_subtitle, 'r', encoding='utf-8') as file:
@@ -75,12 +75,15 @@ class SubtitlesFixer:
 
         # figure out what is broken
         resolver = self._get_resolver(content, video_track.length)
-
         new_content = resolver(video_track, content)
 
-        if new_content is not None:
+        if new_content is None:
+            logging.warning("Subtitles not fixed")
+            return False
+        else:
             with open(broken_subtitle, 'w', encoding='utf-8') as file:
                 file.write(new_content)
+            return True
 
 
     def _extract_all_subtitles(self,video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
@@ -115,24 +118,26 @@ class SubtitlesFixer:
                     subtitles = self._extract_all_subtitles(video_file, video_info.subtitles, wd_dir)
                     broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
 
-                    for broken_subtitile in broken_subtitles_paths:
-                        self._fix_subtitle(broken_subtitile.path, video_info)
+                    status = all(self._fix_subtitle(broken_subtitile.path, video_info) for broken_subtitile in broken_subtitles_paths)
 
-                    # remove all subtitles from video
-                    logging.debug("Removing existing subtitles from file")
-                    video_without_subtitles = video_file + ".nosubtitles.mkv"
-                    utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
+                    if status:
+                        # remove all subtitles from video
+                        logging.debug("Removing existing subtitles from file")
+                        video_without_subtitles = video_file + ".nosubtitles.mkv"
+                        utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
 
-                    # add fixed subtitles to video
-                    logging.debug("Adding fixed subtitles to file")
-                    temporaryVideoPath = video_file + ".fixed.mkv"
-                    utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
+                        # add fixed subtitles to video
+                        logging.debug("Adding fixed subtitles to file")
+                        temporaryVideoPath = video_file + ".fixed.mkv"
+                        utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
 
-                    # overwrite broken video with fixed one
-                    os.replace(temporaryVideoPath, video_file)
+                        # overwrite broken video with fixed one
+                        os.replace(temporaryVideoPath, video_file)
 
-                    # remove temporary file
-                    os.remove(video_without_subtitles)
+                        # remove temporary file
+                        os.remove(video_without_subtitles)
+                    else:
+                        logging.debug("Skipping video due to errors")
 
 
 class Fixer:
