@@ -45,7 +45,7 @@ class SubtitlesFixer:
 
             return f"{time_from_srt} --> {time_to_srt}"
 
-        utils.subrip_time_pattern.sub(multiply_time, content)
+        content = utils.subrip_time_pattern.sub(multiply_time, content)
 
         return content
 

@@ -71,6 +71,11 @@ class SubtitlesFixer(unittest.TestCase):
 
             self.assertNotEqual(hashes_before, hashes_after)
 
+            # run again - there should be no changes
+            subtitles_fixer.run(["-r", td.path])
+            hashes_after_after = hashes(td.path)
+            self.assertEqual(hashes_after, hashes_after_after)
+
     def test_deal_with_incompatible_videos(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
