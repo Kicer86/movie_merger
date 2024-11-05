@@ -91,8 +91,8 @@ def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
 
 def time_to_ms(time_str: str) -> int:
     """ Convert time string 'HH:MM:SS,SSS' to milliseconds """
-    h, m, s, ms = map(lambda x: int(x[:3]), re.split(r'[:.,]', time_str))
-    return (h * 3600 + m * 60 + s) * 1000 + ms
+    h, m, s, ms = re.split(r'[:.,]', time_str)
+    return (int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms[:3])
 
 
 def time_to_s(time: str):
