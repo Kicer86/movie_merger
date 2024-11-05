@@ -101,8 +101,8 @@ def time_to_s(time: str):
 
 def ms_to_time(ms: int) -> str:
     """ Convert milliseconds to time string 'HH:MM:SS,SSS' """
-    h, remainder = divmod(ms, 3600000)
-    m, remainder = divmod(remainder, 60000)
+    h, remainder = divmod(ms, 60*60*1000)
+    m, remainder = divmod(remainder, 60*1000)
     s, ms = divmod(remainder, 1000)
     return f"{int(h):02}:{int(m):02}:{int(s):02},{int(ms):03}"
 
