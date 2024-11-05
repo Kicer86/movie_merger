@@ -162,6 +162,11 @@ class Fixer:
 
         for i in range(len(video_info.subtitles)):
             subtitle = video_info.subtitles[i]
+
+            if not subtitle.format == "subrip":
+                logging.warning(f"Cannot analyse subtitle #{i}: unsupported format '{subtitle.format}'")
+                continue
+
             lenght = subtitle.length
             if lenght is not None and lenght > video_length * 1.001:                 # use 0.1% error margin as for some reason valid subtitles may appear longer than video
                 broken_subtitiles.append(i)

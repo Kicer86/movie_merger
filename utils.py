@@ -11,7 +11,7 @@ from itertools import islice
 from pathlib import Path
 
 SubtitleFile = namedtuple("Subtitle", "path language encoding")
-Subtitle = namedtuple("Subtitle", "language default length tid")
+Subtitle = namedtuple("Subtitle", "language default length tid format")
 VideoTrack = namedtuple("VideoTrack", "fps length")
 VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles path")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
@@ -194,8 +194,9 @@ def get_video_data(path: str) -> [VideoInfo]:
             is_default = stream["disposition"]["default"]
             length = get_length(stream)
             tid = stream["index"]
+            format = stream["codec_name"]
 
-            subtitles.append(Subtitle(language, default=is_default, length=length, tid=tid))
+            subtitles.append(Subtitle(language, default=is_default, length=length, tid=tid, format=format))
         elif stream_type == "video":
             fps = stream["r_frame_rate"]
             length = get_length(stream)
