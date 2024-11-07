@@ -30,6 +30,25 @@ def create_broken_video(output_video_path: str, input_video: str):
         utils.generate_mkv(input_video, output_video_path, [utils.SubtitleFile(srt_subtitle_path, "eng", "utf8")])
 
 
+def create_broken_video_with_too_long_last_subtitle(output_video_path: str, input_video: str):
+    with tempfile.TemporaryDirectory() as subtitle_dir:
+        input_video_info = utils.get_video_data(input_video)
+        default_video_track = input_video_info.video_tracks[0]
+        length = default_video_track.length
+
+        subtitle_path = f"{subtitle_dir}/sub.srt"
+        with open(subtitle_path, 'w', encoding='utf-8') as file:
+            file.write(f"1\n")
+            file.write(f"{utils.ms_to_time(0)} --> {utils.ms_to_time(1000)}\n")
+            file.write(f"1\n\n")
+
+            file.write(f"2\n")
+            file.write(f"{utils.ms_to_time(1000)} --> {utils.ms_to_time((length + 10) * 1000)}\n")
+            file.write(f"2\n")
+
+        utils.generate_mkv(input_video, output_video_path, [utils.SubtitleFile(subtitle_path, "eng", "utf8")])
+
+
 def create_broken_video_with_incompatible_subtitles(output_video_path: str, input_video: str):
     with tempfile.TemporaryDirectory() as subtitle_dir:
         input_video_info = utils.get_video_data(input_video)
@@ -64,6 +83,22 @@ class SubtitlesFixer(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
             create_broken_video(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+
+            hashes_before = hashes(td.path)
+            subtitles_fixer.run(["-r", td.path])
+            hashes_after = hashes(td.path)
+
+            self.assertNotEqual(hashes_before, hashes_after)
+
+            # run again - there should be no changes
+            subtitles_fixer.run(["-r", td.path])
+            hashes_after_after = hashes(td.path)
+            self.assertEqual(hashes_after, hashes_after_after)
+
+    def test_video_with_too_long_last_subtitle_fixing(self):
+        with TestDataWorkingDirectory() as td:
+            output_video_path = f"{td.path}/test_video.mkv"
+            create_broken_video_with_too_long_last_subtitle(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             subtitles_fixer.run(["-r", td.path])

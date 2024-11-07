@@ -29,7 +29,18 @@ class SubtitlesFixer:
         return None
 
     def _long_tail_resolver(self, video_track: utils.VideoTrack, content: str):
-        return None
+        timestamps = list(utils.subrip_time_pattern.finditer(content))
+        last_timestamp = timestamps[-1]
+        time_from, time_to = map(utils.time_to_ms, last_timestamp.groups())
+        lenght = video_track.length
+        new_time_to = min(time_from + 5000, lenght)
+
+        begin_pos = last_timestamp.start(1)
+        end_pos = last_timestamp.end(2)
+
+        content = content[:begin_pos] + f"{utils.ms_to_time(time_from)} --> {utils.ms_to_time(new_time_to)}" + content[end_pos:]
+        return content
+
 
     def _fps_scale_resolver(self, video_track: utils.VideoTrack, content: str):
         target_fps = utils.fps_str_to_float(video_track.fps)
