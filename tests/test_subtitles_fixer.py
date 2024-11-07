@@ -9,7 +9,7 @@ import utils
 from common import TestDataWorkingDirectory, add_test_media, hashes, current_path, generate_microdvd_subtitles
 
 
-def create_broken_video(output_video_path: str, input_video: str):
+def create_broken_video_with_scaled_subtitle_timings(output_video_path: str, input_video: str):
     with tempfile.TemporaryDirectory() as subtitle_dir:
         input_video_info = utils.get_video_data(input_video)
         default_video_track = input_video_info.video_tracks[0]
@@ -71,7 +71,7 @@ class SubtitlesFixer(unittest.TestCase):
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             subtitles_fixer.run([td.path])
@@ -79,10 +79,10 @@ class SubtitlesFixer(unittest.TestCase):
 
             self.assertEqual(hashes_before, hashes_after)
 
-    def test_video_fixing(self):
+    def test_video_with_scaled_subtitle_timings_fixing(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             subtitles_fixer.run(["-r", td.path])
