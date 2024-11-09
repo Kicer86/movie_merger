@@ -185,7 +185,7 @@ class Fixer:
             subtitle = video_info.subtitles[i]
 
             if not subtitle.format == "subrip":
-                logging.warning(f"Cannot analyse subtitle #{i}: unsupported format '{subtitle.format}'")
+                logging.warning(f"Cannot analyse subtitle #{i} of {video_file}: unsupported format '{subtitle.format}'")
                 continue
 
             lenght = subtitle.length
