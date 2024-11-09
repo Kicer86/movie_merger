@@ -128,7 +128,7 @@ class Fixer:
         logging.info("Fixing videos")
 
         with logging_redirect_tqdm():
-            for broken_video in tqdm(broken_videos_info, desc="Working", unit="video", leave=False, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
+            for broken_video in tqdm(broken_videos_info, desc="Fixing", unit="video", leave=False, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
                 self._check_for_stop()
 
                 video_info = broken_video[0]
@@ -200,20 +200,25 @@ class Fixer:
         return (video_info, broken_subtitiles)
 
     def _process_dir(self, path: str) -> []:
-        self._check_for_stop()
-
-        video_files = []
         broken_videos = []
-        for entry in os.scandir(path):
-            if entry.is_file() and utils.is_video(entry.path):
-                video_files.append(entry.path)
-            elif entry.is_dir():
-                broken_videos.extend(self._process_dir(entry.path))
+        video_files = []
 
-        for video_file in video_files:
-            broken_video = self._check_if_broken(video_file)
-            if broken_video is not None:
-                broken_videos.append(broken_video)
+        logging.debug(f"Finding videos in {path}")
+        for cd, _, files in os.walk(path, followlinks = True):
+            for file in files:
+                self._check_for_stop()
+                file_path = os.path.join(cd, file)
+
+                if utils.is_video(file_path):
+                    video_files.append(file_path)
+
+        logging.debug("Analysing videos")
+        with logging_redirect_tqdm():
+            for video in tqdm(video_files, desc="Analysing videos", unit="video", leave=False, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
+                self._check_for_stop()
+                broken_video = self._check_if_broken(video)
+                if broken_video is not None:
+                    broken_videos.append(broken_video)
 
         return broken_videos
 
