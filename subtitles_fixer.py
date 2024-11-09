@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 import re
+import signal
 import shutil
 import sys
 import tempfile
@@ -16,6 +17,18 @@ class Fixer:
     def __init__(self, really_fix: bool):
         self._work = True
         self._do_fix = really_fix
+        self._stop = False
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, signum, frame):
+        logging.info(f"Got signal #{signum}. Exiting soon")
+        self._stop = True
+
+    def _check_for_stop(self):
+        if self._stop:
+            logging.warning("Videos analysis canceled.")
+            sys.exit(1)
 
     @staticmethod
     def _print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
@@ -116,6 +129,8 @@ class Fixer:
 
         with logging_redirect_tqdm():
             for broken_video in tqdm(broken_videos_info, desc="Working", unit="video", leave=False, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
+                self._check_for_stop()
+
                 video_info = broken_video[0]
                 broken_subtitiles = broken_video[1]
 
@@ -185,6 +200,8 @@ class Fixer:
         return (video_info, broken_subtitiles)
 
     def _process_dir(self, path: str) -> []:
+        self._check_for_stop()
+
         video_files = []
         broken_videos = []
         for entry in os.scandir(path):
