@@ -214,7 +214,7 @@ class Fixer:
 
         logging.debug("Analysing videos")
         with logging_redirect_tqdm():
-            for video in tqdm(video_files, desc="Analysing videos", unit="video", leave=False, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
+            for video in tqdm(video_files, desc="Analysing videos", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=not sys.stdout.isatty() or 'unittest' in sys.modules):
                 self._check_for_stop()
                 broken_video = self._check_if_broken(video)
                 if broken_video is not None:
