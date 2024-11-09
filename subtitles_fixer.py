@@ -11,18 +11,17 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 import utils
 
-def print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
-    logging.info(f"Found {len(broken_videos_info)} broken videos:")
-    for broken_video in broken_videos_info:
-        logging.info(f"{len(broken_video[1])} broken subtitle(s) in {broken_video[0].path} found")
 
+class Fixer:
+    def __init__(self, really_fix: bool):
+        self._work = True
+        self._do_fix = really_fix
 
-def dry_run_action(broken_videos_info: [(utils.VideoInfo, [int])]):
-    print_broken_videos(broken_videos_info)
-    logging.info("Dry run - not fixing")
-
-
-class SubtitlesFixer:
+    @staticmethod
+    def _print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
+        logging.info(f"Found {len(broken_videos_info)} broken videos:")
+        for broken_video in broken_videos_info:
+            logging.info(f"{len(broken_video[1])} broken subtitle(s) in {broken_video[0].path} found")
 
     def _no_resolver(self, video_track: utils.VideoTrack, content: str):
         logging.error("Cannot fix the file, no idea how to do it.")
@@ -96,7 +95,6 @@ class SubtitlesFixer:
                 file.write(new_content)
             return True
 
-
     def _extract_all_subtitles(self,video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
         options = ["tracks", video_file]
@@ -112,9 +110,8 @@ class SubtitlesFixer:
 
         return result
 
-
-    def __call__(self, broken_videos_info: [(utils.VideoInfo, [int])]):
-        print_broken_videos(broken_videos_info)
+    def _repair_videos(self, broken_videos_info: [(utils.VideoInfo, [int])]):
+        self._print_broken_videos(broken_videos_info)
         logging.info("Fixing videos")
 
         with logging_redirect_tqdm():
@@ -132,29 +129,27 @@ class SubtitlesFixer:
                     status = all(self._fix_subtitle(broken_subtitile.path, video_info) for broken_subtitile in broken_subtitles_paths)
 
                     if status:
-                        # remove all subtitles from video
-                        logging.debug("Removing existing subtitles from file")
-                        video_without_subtitles = video_file + ".nosubtitles.mkv"
-                        utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
+                        if self._do_fix:
+                            # remove all subtitles from video
+                            logging.debug("Removing existing subtitles from file")
+                            video_without_subtitles = video_file + ".nosubtitles.mkv"
+                            utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
 
-                        # add fixed subtitles to video
-                        logging.debug("Adding fixed subtitles to file")
-                        temporaryVideoPath = video_file + ".fixed.mkv"
-                        utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
+                            # add fixed subtitles to video
+                            logging.debug("Adding fixed subtitles to file")
+                            temporaryVideoPath = video_file + ".fixed.mkv"
+                            utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
 
-                        # overwrite broken video with fixed one
-                        os.replace(temporaryVideoPath, video_file)
+                            # overwrite broken video with fixed one
+                            os.replace(temporaryVideoPath, video_file)
 
-                        # remove temporary file
-                        os.remove(video_without_subtitles)
+                            # remove temporary file
+                            os.remove(video_without_subtitles)
+                        else:
+                            logging.info("Not applying fixes - dry run mode.")
                     else:
                         logging.debug("Skipping video due to errors")
 
-
-class Fixer:
-    def __init__(self, fix_action):
-        self._work = True
-        self._fix = fix_action
 
     def _check_if_broken(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
         logging.debug(f"Processing file {video_file}")
@@ -208,7 +203,7 @@ class Fixer:
     def process_dir(self, path: str):
         broken_videos = self._process_dir(path)
 
-        self._fix(broken_videos)
+        self._repair_videos(broken_videos)
 
     def stop(self):
         self._work = False
@@ -239,7 +234,7 @@ def run(sys_args: [str]):
             logging.debug(f"{tool} path: {path}")
 
     logging.info("Searching for broken files")
-    fixer = Fixer(SubtitlesFixer() if args.no_dry_run else dry_run_action)
+    fixer = Fixer(args.no_dry_run)
     fixer.process_dir(args.videos_path[0])
     logging.info("Done")
 
