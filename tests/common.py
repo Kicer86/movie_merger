@@ -80,7 +80,15 @@ def hashes(path: str) -> [()]:
 
 def generate_microdvd_subtitles(path: str, length: int, fps: float = 60):
     with open(path, "w") as sf:
+        b = 0
+        e = 0
         for t in range(length):
             b = int(t * fps)
             e = int(b + fps/2)
             sf.write(f"{{{b}}}{{{e}}}{t}\n")
+
+        # microdvd requires at least 3 entries for ffmpeg to consume it
+        if length < 3:
+            # add some empty entries to satisfy ffmpeg
+            sf.write(f"{{{e}}}{{{e + 1}}}\n")
+            sf.write(f"{{{e + 1}}}{{{e + 2}}}\n")
