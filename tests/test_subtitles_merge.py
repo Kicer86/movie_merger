@@ -12,10 +12,10 @@ class SubtitlesMerge(unittest.TestCase):
 
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
-            add_test_media(".*mp4|.*mov|.*srt", td.path)
+            add_test_media(".*mp4|.*MP4|.*mov|.*srt", td.path)
 
             hashes_before = hashes(td.path)
-            self.assertEqual(len(hashes_before), 2 * 9)        # 9 videos and 9 subtitles expected
+            self.assertEqual(len(hashes_before), 2 * 13)        # 13 videos and 13 subtitles expected
             twotone.run([td.path])
             hashes_after = hashes(td.path)
 
@@ -34,15 +34,15 @@ class SubtitlesMerge(unittest.TestCase):
 
     def test_many_videos_conversion(self):
         with TestDataWorkingDirectory() as td:
-            add_test_media(".*mp4|.*mov|.*srt", td.path)
+            add_test_media(".*MP4|.*mp4|.*mov|.*srt", td.path)
 
             files_before = list_files(td.path)
-            self.assertEqual(len(files_before), 2 * 9)        # 9 videos and 9 subtitles expected
+            self.assertEqual(len(files_before), 2 * 13)         # 13 videos and 13 subtitles expected
 
             twotone.run([td.path, "--no-dry-run"])
 
             files_after = list_files(td.path)
-            self.assertEqual(len(files_after), 1 * 9)        # 9 mkv videos expected
+            self.assertEqual(len(files_after), 1 * 13)          # 13 mkv videos expected
 
             for video in files_after:
                 self.assertEqual(video[-4:], ".mkv")
