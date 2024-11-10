@@ -271,8 +271,9 @@ def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
         diff = abs(lhs_fps - rhs_fps)
 
         # For videos with fps 1000000/33333 (≈30fps) mkvmerge generates video with 30/1 fps.
+        # And videos with fps 29999/500 (≈60fps) it uses 60/1 fps.
         # I'm not sure if this is acceptable but at this moment let it be
-        if diff > 0.0005:
+        if diff > 0.0021:
             return False
 
     return True
