@@ -83,8 +83,8 @@ def generate_microdvd_subtitles(path: str, length: int, fps: float = 60):
         b = 0
         e = 0
         for t in range(length):
-            b = int(t * fps)
-            e = int(b + fps/2)
+            b = int(round(t * fps, 0))
+            e = int(round(b + fps/2, 0))
             sf.write(f"{{{b}}}{{{e}}}{t}\n")
 
         # microdvd requires at least 3 entries for ffmpeg to consume it
