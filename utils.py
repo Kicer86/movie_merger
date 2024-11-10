@@ -115,8 +115,12 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     """ fix subtitle's fps """
     scale = subtitles_fps / ffmpeg_default_fps
 
-    if math.isclose(scale, 1, rel_tol = 0.001):         # scale == 1? nothing to fix
-        return
+    # if no scaling is needed, make sure scale is set exactly to 1
+    # and rewrite file as we need a copy in output_path anyway.
+    # A simple file copying would do the job, but I just want to use the same
+    # mechanism in all scenarios
+    if math.isclose(scale, 1, rel_tol = 0.001):
+        scale = 1
 
     with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
         for line in infile:
