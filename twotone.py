@@ -4,7 +4,6 @@ import langid
 import logging
 import os
 import shutil
-import signal
 import subprocess
 import sys
 import tempfile
@@ -17,9 +16,10 @@ import utils
 work = True
 
 
-class TwoTone:
+class TwoTone(utils.InterruptibleProcess):
 
     def __init__(self, dry_run: bool, language: str, lang_priority: str):
+        super().__init__()
         self.dry_run = dry_run
         self.language = language
         self.to_be_removed = []
@@ -211,9 +211,7 @@ class TwoTone:
             self._merge(video_file, subtitles)
 
     def process_dir(self, path: str):
-        global work
-        if not work:
-            return
+        self._check_for_stop()
 
         video_files = []
         for entry in os.scandir(path):
@@ -273,14 +271,7 @@ def run(sys_args: [str]):
     two_tone.process_dir(args.videos_path[0])
 
 
-def sig_handler(signum, frame):
-    global work
-    logging.warning("SIGINT received, stopping soon")
-    work = False
-
-
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, sig_handler)
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     try:
         run(sys.argv[1:])

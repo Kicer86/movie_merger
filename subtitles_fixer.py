@@ -3,7 +3,6 @@ import argparse
 import logging
 import os
 import re
-import signal
 import shutil
 import sys
 import tempfile
@@ -17,22 +16,10 @@ def hide_progressbar() -> bool:
     return not sys.stdout.isatty() or 'unittest' in sys.modules
 
 
-class Fixer:
+class Fixer(utils.InterruptibleProcess):
     def __init__(self, really_fix: bool):
-        self._work = True
+        super().__init__()
         self._do_fix = really_fix
-        self._stop = False
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, signum, frame):
-        logging.info(f"Got signal #{signum}. Exiting soon")
-        self._stop = True
-
-    def _check_for_stop(self):
-        if self._stop:
-            logging.warning("Videos analysis canceled.")
-            sys.exit(1)
 
     @staticmethod
     def _print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
@@ -230,9 +217,6 @@ class Fixer:
         broken_videos = self._process_dir(path)
 
         self._repair_videos(broken_videos)
-
-    def stop(self):
-        self._work = False
 
 
 def run(sys_args: [str]):

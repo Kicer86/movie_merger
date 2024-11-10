@@ -5,10 +5,13 @@ import logging
 import math
 import os.path
 import re
+import signal
 import subprocess
+import sys
 from collections import namedtuple
 from itertools import islice
 from pathlib import Path
+
 
 SubtitleFile = namedtuple("Subtitle", "path language encoding")
 Subtitle = namedtuple("Subtitle", "language default length tid format")
@@ -281,3 +284,19 @@ def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
             return False
 
     return True
+
+
+class InterruptibleProcess:
+    def __init__(self):
+        self._work = True
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, signum, frame):
+        logging.info(f"Got signal #{signum}. Exiting soon.")
+        self._work = False
+
+    def _check_for_stop(self):
+        if not self._work:
+            logging.warning("Exiting now due to received signal.")
+            sys.exit(1)
