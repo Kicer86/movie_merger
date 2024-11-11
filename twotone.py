@@ -228,6 +228,14 @@ class TwoTone(utils.InterruptibleProcess):
                 if utils.is_video(file_path):
                     video_files.append(file_path)
 
+            # check if number of unique file names (excluding extensions) is equal to number of files (including extensions).
+            # if no, then it means there are at least two video files with the same name but different extension.
+            # this is a cumbersome situation so just don't allow it
+            unique_names = set( Path(video).stem for video in video_files)
+            if len(unique_names) != len(video_files):
+                logging.warning(f"Two video files with the same name found in {cd}. This is not supported, skipping whole directory.")
+                continue
+
             subtitles_finder = self._aggressive_subtitle_search if len(video_files) == 1 else self._simple_subtitle_search
             for video_file in video_files:
                 vs = self._process_video(video_file, subtitles_finder)
