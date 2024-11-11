@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from collections import namedtuple
 from pathlib import Path
 
@@ -184,7 +186,7 @@ class TwoTone(utils.InterruptibleProcess):
 
         prepared_subtitles = []
         for subtitle in sorted_subtitles:
-            logging.info(f"\tadd subtitles [{subtitle.language}]: {subtitle.path}")
+            logging.debug(f"\tadd subtitles [{subtitle.language}]: {subtitle.path}")
             self._register_input(subtitle.path)
 
             # Subtitles are buggy sometimes, use ffmpeg to fix them.
@@ -195,36 +197,58 @@ class TwoTone(utils.InterruptibleProcess):
             prepared_subtitles.append(converted_subtitle)
 
         # perform
-        logging.info("\tMerge in progress...")
+        logging.debug("\tMerge in progress...")
         if not self.dry_run:
             utils.generate_mkv(input_video=input_video, output_path=output_video, subtitles=prepared_subtitles)
 
         # Remove all inputs and temporary files. Only output file should left
         self._remove()
 
-        logging.info("\tDone")
+        logging.debug("\tDone")
 
     def _process_video(self, video_file: str, subtitles_fetcher):
         logging.debug(f"Analyzing subtitles for video: {video_file}")
         subtitles = subtitles_fetcher(video_file)
-        if subtitles:
-            self._merge(video_file, subtitles)
+
+        if len(subtitles) == 0:
+            return None
+        else:
+            return (video_file, subtitles)
+
+    def _process_dir(self, path: str):
+        logging.debug(f"Finding videos in {path}")
+        videos_and_subtitles = []
+
+        for cd, _, files in os.walk(path, followlinks = True):
+            video_files = []
+            for file in files:
+                self._check_for_stop()
+                file_path = os.path.join(cd, file)
+
+                if utils.is_video(file_path):
+                    video_files.append(file_path)
+
+            subtitles_finder = self._aggressive_subtitle_search if len(video_files) == 1 else self._simple_subtitle_search
+            for video_file in video_files:
+                vs = self._process_video(video_file, subtitles_finder)
+                if vs is not None:
+                    videos_and_subtitles.append(vs)
+
+        return videos_and_subtitles
 
     def process_dir(self, path: str):
-        self._check_for_stop()
+        logging.info(f"Looking for video and subtitle files in {path}")
+        vas = self._process_dir(path)
 
-        video_files = []
-        for entry in os.scandir(path):
-            if entry.is_file() and utils.is_video(entry.path):
-                video_files.append(entry.path)
-            elif entry.is_dir():
-                self.process_dir(entry.path)
+        logging.info(f"Found {len(vas)} videos with subtitles to merge")
+        for video, _ in vas:
+            logging.debug(video)
 
-        if len(video_files) == 1:
-            self._process_video(video_files[0], self._aggressive_subtitle_search)
-        elif len(video_files) > 1:
-            for video_file in video_files:
-                self._process_video(video_file, self._simple_subtitle_search)
+        logging.info("Starting merge")
+        with logging_redirect_tqdm():
+            for video, subtitles in tqdm(vas, desc="Merging", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=utils.hide_progressbar()):
+                self._check_for_stop()
+                self._merge(video, subtitles)
 
 
 def run(sys_args: [str]):
