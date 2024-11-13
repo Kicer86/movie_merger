@@ -114,6 +114,22 @@ def fps_str_to_float(fps: str) -> float:
     return eval(fps)
 
 
+def alter_subrip_subtitles_times(content: str, multiplier: float) -> str:
+    def multiply_time(match):
+        time_from, time_to = map(time_to_ms, match.groups())
+        time_from *= multiplier
+        time_to *= multiplier
+
+        time_from_srt = ms_to_time(time_from)
+        time_to_srt = ms_to_time(time_to)
+
+        return f"{time_from_srt} --> {time_to_srt}"
+
+    content = subrip_time_pattern.sub(multiply_time, content)
+
+    return content
+
+
 def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     """ fix subtitle's fps """
     scale = subtitles_fps / ffmpeg_default_fps

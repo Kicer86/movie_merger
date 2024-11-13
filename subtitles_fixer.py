@@ -40,25 +40,11 @@ class Fixer(utils.InterruptibleProcess):
         content = content[:begin_pos] + f"{utils.ms_to_time(time_from)} --> {utils.ms_to_time(new_time_to)}" + content[end_pos:]
         return content
 
-
     def _fps_scale_resolver(self, video_track: utils.VideoTrack, content: str):
         target_fps = utils.fps_str_to_float(video_track.fps)
         multiplier = utils.ffmpeg_default_fps / target_fps
 
-        def multiply_time(match):
-            time_from, time_to = map(utils.time_to_ms, match.groups())
-            time_from *= multiplier
-            time_to *= multiplier
-
-            time_from_srt = utils.ms_to_time(time_from)
-            time_to_srt = utils.ms_to_time(time_to)
-
-            return f"{time_from_srt} --> {time_to_srt}"
-
-        content = utils.subrip_time_pattern.sub(multiply_time, content)
-
-        return content
-
+        return utils.alter_subrip_subtitles_times(content, multiplier)
 
     def _get_resolver(self, content: str, video_length: int):
         timestamps = list(utils.subrip_time_pattern.finditer(content))
@@ -151,7 +137,6 @@ class Fixer(utils.InterruptibleProcess):
                             logging.info("Not applying fixes - dry run mode.")
                     else:
                         logging.debug("Skipping video due to errors")
-
 
     def _check_if_broken(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
         logging.debug(f"Processing file {video_file}")
