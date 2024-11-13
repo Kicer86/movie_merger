@@ -5,10 +5,13 @@ import logging
 import math
 import os.path
 import re
+import signal
 import subprocess
+import sys
 from collections import namedtuple
 from itertools import islice
 from pathlib import Path
+
 
 SubtitleFile = namedtuple("Subtitle", "path language encoding")
 Subtitle = namedtuple("Subtitle", "language default length tid format")
@@ -111,38 +114,37 @@ def fps_str_to_float(fps: str) -> float:
     return eval(fps)
 
 
+def alter_subrip_subtitles_times(content: str, multiplier: float) -> str:
+    def multiply_time(match):
+        time_from, time_to = map(time_to_ms, match.groups())
+        time_from *= multiplier
+        time_to *= multiplier
+
+        time_from_srt = ms_to_time(time_from)
+        time_to_srt = ms_to_time(time_to)
+
+        return f"{time_from_srt} --> {time_to_srt}"
+
+    content = subrip_time_pattern.sub(multiply_time, content)
+
+    return content
+
+
 def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     """ fix subtitle's fps """
-    scale = subtitles_fps / ffmpeg_default_fps
+    multiplier = ffmpeg_default_fps / subtitles_fps
 
     # if no scaling is needed, make sure scale is set exactly to 1
     # and rewrite file as we need a copy in output_path anyway.
     # A simple file copying would do the job, but I just want to use the same
     # mechanism in all scenarios
-    if math.isclose(scale, 1, rel_tol = 0.001):
-        scale = 1
+    if math.isclose(multiplier, 1, rel_tol = 0.001):
+        multiplier = 1
 
     with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
-        for line in infile:
-            match = subrip_time_pattern.match(line)
-            if match:
-                start_time, end_time = match.groups()
-                start_ms = time_to_ms(start_time)
-                end_ms = time_to_ms(end_time)
-
-                # Apply scaling
-                start_ms = int(start_ms / scale)
-                end_ms = int(end_ms / scale)
-
-                # Convert back to time string
-                new_start_time = ms_to_time(start_ms)
-                new_end_time = ms_to_time(end_ms)
-
-                # Write the updated line
-                outfile.write(f"{new_start_time} --> {new_end_time}\n")
-            else:
-                # Write the line unchanged
-                outfile.write(line)
+        content = infile.read()
+        content = alter_subrip_subtitles_times(content, multiplier)
+        outfile.write(content)
 
 def get_video_full_info(path: str) -> str:
     args = []
@@ -281,3 +283,23 @@ def compare_videos(lhs: [VideoTrack], rhs: [VideoTrack]) -> bool:
             return False
 
     return True
+
+
+def hide_progressbar() -> bool:
+    return not sys.stdout.isatty() or 'unittest' in sys.modules
+
+
+class InterruptibleProcess:
+    def __init__(self):
+        self._work = True
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, signum, frame):
+        logging.info(f"Got signal #{signum}. Exiting soon.")
+        self._work = False
+
+    def _check_for_stop(self):
+        if not self._work:
+            logging.warning("Exiting now due to received signal.")
+            sys.exit(1)

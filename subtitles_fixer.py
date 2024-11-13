@@ -3,7 +3,6 @@ import argparse
 import logging
 import os
 import re
-import signal
 import shutil
 import sys
 import tempfile
@@ -13,26 +12,10 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 import utils
 
 
-def hide_progressbar() -> bool:
-    return not sys.stdout.isatty() or 'unittest' in sys.modules
-
-
-class Fixer:
+class Fixer(utils.InterruptibleProcess):
     def __init__(self, really_fix: bool):
-        self._work = True
+        super().__init__()
         self._do_fix = really_fix
-        self._stop = False
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, signum, frame):
-        logging.info(f"Got signal #{signum}. Exiting soon")
-        self._stop = True
-
-    def _check_for_stop(self):
-        if self._stop:
-            logging.warning("Videos analysis canceled.")
-            sys.exit(1)
 
     @staticmethod
     def _print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
@@ -57,25 +40,11 @@ class Fixer:
         content = content[:begin_pos] + f"{utils.ms_to_time(time_from)} --> {utils.ms_to_time(new_time_to)}" + content[end_pos:]
         return content
 
-
     def _fps_scale_resolver(self, video_track: utils.VideoTrack, content: str):
         target_fps = utils.fps_str_to_float(video_track.fps)
         multiplier = utils.ffmpeg_default_fps / target_fps
 
-        def multiply_time(match):
-            time_from, time_to = map(utils.time_to_ms, match.groups())
-            time_from *= multiplier
-            time_to *= multiplier
-
-            time_from_srt = utils.ms_to_time(time_from)
-            time_to_srt = utils.ms_to_time(time_to)
-
-            return f"{time_from_srt} --> {time_to_srt}"
-
-        content = utils.subrip_time_pattern.sub(multiply_time, content)
-
-        return content
-
+        return utils.alter_subrip_subtitles_times(content, multiplier)
 
     def _get_resolver(self, content: str, video_length: int):
         timestamps = list(utils.subrip_time_pattern.finditer(content))
@@ -132,7 +101,7 @@ class Fixer:
         logging.info("Fixing videos")
 
         with logging_redirect_tqdm():
-            for broken_video in tqdm(broken_videos_info, desc="Fixing", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=hide_progressbar()):
+            for broken_video in tqdm(broken_videos_info, desc="Fixing", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=utils.hide_progressbar()):
                 self._check_for_stop()
 
                 video_info = broken_video[0]
@@ -168,7 +137,6 @@ class Fixer:
                             logging.info("Not applying fixes - dry run mode.")
                     else:
                         logging.debug("Skipping video due to errors")
-
 
     def _check_if_broken(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
         logging.debug(f"Processing file {video_file}")
@@ -218,7 +186,7 @@ class Fixer:
 
         logging.debug("Analysing videos")
         with logging_redirect_tqdm():
-            for video in tqdm(video_files, desc="Analysing videos", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=hide_progressbar()):
+            for video in tqdm(video_files, desc="Analysing videos", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=utils.hide_progressbar()):
                 self._check_for_stop()
                 broken_video = self._check_if_broken(video)
                 if broken_video is not None:
@@ -230,9 +198,6 @@ class Fixer:
         broken_videos = self._process_dir(path)
 
         self._repair_videos(broken_videos)
-
-    def stop(self):
-        self._work = False
 
 
 def run(sys_args: [str]):
