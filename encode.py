@@ -3,7 +3,7 @@ import os
 import logging
 import subprocess
 import sys
-
+import random
 
 # Determine the log file name based on the script name
 script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -20,6 +20,24 @@ def find_video_files(directory):
             if file.lower().endswith(('.mov', '.mp4', '.mkv')):
                 video_files.append(os.path.join(root, file))
     return video_files
+
+def get_video_duration(video_file):
+    """Get the duration of a video in seconds."""
+    cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+    try:
+        return float(result.stdout.strip())
+    except ValueError:
+        logging.error(f"Failed to get duration for {video_file}")
+        return None
+
+def select_random_fragments(video_file, duration, num_fragments=5, fragment_length=5):
+    """Select random fragments from the video for analysis."""
+    fragments = []
+    for _ in range(num_fragments):
+        start_time = random.uniform(0, max(0, duration - fragment_length))
+        fragments.append((start_time, fragment_length))
+    return fragments
 
 def calculate_quality(original, encoded):
     """Calculate SSIM between original and encoded video."""
@@ -51,6 +69,16 @@ def encode_video(input_file, output_file, crf, preset, extra_params=None):
 
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+def encode_fragment(video_file, start_time, fragment_length, output_file, crf):
+    """Encode a fragment of the video."""
+    cmd = [
+        "ffmpeg", "-v", "error", "-stats", "-nostdin",
+        "-ss", str(start_time), "-t", str(fragment_length),
+        "-i", video_file, "-c:v", "libx265", "-crf", str(crf),
+        "-preset", "veryfast", "-c:a", "copy", output_file
+    ]
+    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 def find_optimal_crf(input_file, basename, ext):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
@@ -59,38 +87,39 @@ def find_optimal_crf(input_file, basename, ext):
     best_quality = None
     best_size = original_size
 
-    logging.info(f"Starting CRF bisection for {input_file} with veryfast preset")
+    duration = get_video_duration(input_file)
+    if not duration:
+        return None
+
+    num_fragments = max(3, min(10, int(duration // 30)))
+    fragments = select_random_fragments(input_file, duration, num_fragments)
+
+    logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
 
     while crf_min <= crf_max:
         mid_crf = (crf_min + crf_max) // 2
-        output_file = f"{basename}.temp.{ext}"
-        encode_video(input_file, output_file, mid_crf, preset="veryfast")
+        qualities = []
 
-        encoded_size = os.path.getsize(output_file)
-        quality = calculate_quality(input_file, output_file)
-        logging.info(f"CRF: {mid_crf}, Quality (SSIM): {quality}, Encoded Size: {encoded_size} bytes")
+        for i, (start, length) in enumerate(fragments):
+            fragment_output = f"{basename}_frag{i}.temp.{ext}"
+            encode_fragment(input_file, start, length, fragment_output, mid_crf)
+            quality = calculate_quality(input_file, fragment_output)
+            if quality:
+                qualities.append(quality)
+            os.remove(fragment_output)
 
-        if quality and quality >= 0.98:
+        avg_quality = sum(qualities) / len(qualities) if qualities else 0
+        logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
+
+        if avg_quality >= 0.98:
             best_crf = mid_crf
-            best_quality = quality
-            best_size = encoded_size
+            best_quality = avg_quality
             crf_min = mid_crf + 1
         else:
             crf_max = mid_crf - 1
 
-        os.remove(output_file)
-
-    logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf}, Encoded size: {best_size} bytes")
-
-    # Return the best CRF and whether the best size is smaller than the original
-    if best_size < original_size:
-        return best_crf
-    else:
-        logging.warning(
-            f"Optimal CRF: {best_crf}, but encoded size {best_size} bytes is not smaller than original size "
-            f"{original_size} bytes. Skipping final encoding and keeping the original file."
-        )
-        return None
+    logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf}")
+    return best_crf
 
 def final_encode(input_file, basename, ext, crf, extra_params):
     """Perform the final encoding with the best CRF using the determined extra_params."""
