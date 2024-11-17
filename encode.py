@@ -1,9 +1,13 @@
 
 import os
 import logging
+import random
 import subprocess
 import sys
-import random
+import tempfile
+
+import utils
+
 
 # Determine the log file name based on the script name
 script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -69,23 +73,25 @@ def encode_video(input_file, output_file, crf, preset, extra_params=None):
 
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-def encode_fragment(video_file, start_time, fragment_length, output_file, crf):
-    """Encode a fragment of the video."""
-    cmd = [
-        "ffmpeg", "-v", "error", "-stats", "-nostdin",
-        "-ss", str(start_time), "-t", str(fragment_length),
-        "-i", video_file, "-c:v", "libx265", "-crf", str(crf),
-        "-preset", "veryfast", "-c:a", "copy", output_file
-    ]
-    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def extract_fragment(video_file, start_time, fragment_length, output_file):
+    result = utils.start_process("ffmpeg",
+                        [ "-v", "error", "-stats", "-nostdin",
+                          "-fflags", "+genpts",
+                          "-ss", str(start_time), "-t", str(fragment_length),
+                          "-i", video_file, "-c", "copy", output_file
+                        ]
+    )
 
-def find_optimal_crf(input_file, basename, ext):
+    print(result.stderr)
+
+def find_optimal_crf(input_file, ext):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
     crf_min, crf_max = 5, 45
     best_crf = crf_min
     best_quality = None
     best_size = original_size
+    filename = utils.split_path(input_file)[1]
 
     duration = get_video_duration(input_file)
     if not duration:
@@ -100,13 +106,17 @@ def find_optimal_crf(input_file, basename, ext):
         mid_crf = (crf_min + crf_max) // 2
         qualities = []
 
-        for i, (start, length) in enumerate(fragments):
-            fragment_output = f"{basename}_frag{i}.temp.{ext}"
-            encode_fragment(input_file, start, length, fragment_output, mid_crf)
-            quality = calculate_quality(input_file, fragment_output)
-            if quality:
-                qualities.append(quality)
-            os.remove(fragment_output)
+        with tempfile.TemporaryDirectory() as wd_dir:
+            for i, (start, length) in enumerate(fragments):
+                fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.{ext}")
+                encoded_fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.enc.{ext}")
+
+                extract_fragment(input_file, start, length, fragment_output)
+                encode_video(fragment_output, encoded_fragment_output, mid_crf, "veryfast")
+
+                quality = calculate_quality(fragment_output, encoded_fragment_output)
+                if quality:
+                    qualities.append(quality)
 
         avg_quality = sum(qualities) / len(qualities) if qualities else 0
         logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
@@ -157,8 +167,8 @@ def main(directory):
         logging.info(f"Processing {file}")
         basename, ext = os.path.splitext(file)
         ext = ext[1:]  # Remove the dot from the extension
-        best_crf = find_optimal_crf(file, basename, ext)
-        if best_crf is not None:
+        best_crf = find_optimal_crf(file, ext)
+        if best_crf is not None and False:
             # increase crf by one as veryslow preset will be used, so result should be above 0.98 quality anyway
             final_encode(file, basename, ext, best_crf + 1, [])
         logging.info(f"Finished processing {file}")
