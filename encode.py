@@ -9,13 +9,6 @@ import tempfile
 import utils
 
 
-# Determine the log file name based on the script name
-script_name = os.path.splitext(os.path.basename(__file__))[0]
-log_filename = f"{script_name}.log"
-
-# Set up logging
-logging.basicConfig(filename=log_filename, level=logging.INFO, format="%(asctime)s %(message)s")
-
 def find_video_files(directory):
     """Find video files with specified extensions."""
     video_files = []
@@ -180,5 +173,6 @@ if __name__ == "__main__":
         print("Usage: python encode_videos.py /path/to/directory")
         sys.exit(1)
 
+    logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     directory = sys.argv[1]
     main(directory)
