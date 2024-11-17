@@ -67,7 +67,7 @@ def encode_video(input_file, output_file, crf, preset, extra_params=None):
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def extract_fragment(video_file, start_time, fragment_length, output_file):
-    result = utils.start_process("ffmpeg",
+    status = utils.start_process("ffmpeg",
                         [ "-v", "error", "-stats", "-nostdin",
                           "-fflags", "+genpts",
                           "-ss", str(start_time), "-t", str(fragment_length),
@@ -75,7 +75,8 @@ def extract_fragment(video_file, start_time, fragment_length, output_file):
                         ]
     )
 
-    print(result.stderr)
+    if status.returncode != 0:
+        raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
 def find_optimal_crf(input_file, ext):
     """Find the optimal CRF using bisection."""
