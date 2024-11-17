@@ -81,7 +81,7 @@ def extract_fragment(video_file, start_time, fragment_length, output_file):
 def find_optimal_crf(input_file, ext):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
-    crf_min, crf_max = 5, 45
+    crf_min, crf_max = 0, 51
     best_crf = crf_min
     best_quality = None
     best_size = original_size
