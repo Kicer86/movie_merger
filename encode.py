@@ -138,9 +138,8 @@ def main(directory):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python3 encode_videos.py /path/to/directory")
+        print("Usage: python encode_videos.py /path/to/directory")
         sys.exit(1)
 
     directory = sys.argv[1]
     main(directory)
-
