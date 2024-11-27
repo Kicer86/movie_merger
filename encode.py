@@ -109,7 +109,7 @@ def bisection_search(eval_func, min_value, max_value, target_condition):
 
     return best_value, best_result
 
-def find_optimal_crf(input_file, requested_quality=0.98):
+def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
     _, filename, ext = utils.split_path(input_file)
@@ -118,19 +118,26 @@ def find_optimal_crf(input_file, requested_quality=0.98):
     if not duration:
         return None
 
-    num_fragments = max(3, min(10, int(duration // 30)))
-    fragments = select_random_fragments(input_file, duration, num_fragments)
-
-    logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
+    if allow_segments:
+        num_fragments = max(3, min(10, int(duration // 30)))
+        fragments = select_random_fragments(input_file, duration, num_fragments)
+        logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
+    else:
+        fragments = [(None, None)]
+        logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using whole file")
 
     def evaluate_crf(mid_crf):
         qualities = []
         with tempfile.TemporaryDirectory() as wd_dir:
             for i, (start, length) in enumerate(fragments):
-                fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.{ext}")
                 encoded_fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.enc.{ext}")
 
-                extract_fragment(input_file, start, length, fragment_output)
+                if start is not None and length is not None:
+                    fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.{ext}")
+                    extract_fragment(input_file, start, length, fragment_output)
+                else:
+                    fragment_output = input_file
+
                 encode_video(fragment_output, encoded_fragment_output, mid_crf, "veryfast")
 
                 quality = calculate_quality(fragment_output, encoded_fragment_output)
