@@ -78,13 +78,40 @@ def extract_fragment(video_file, start_time, fragment_length, output_file):
     if status.returncode != 0:
         raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
+def bisection_search(eval_func, min_value, max_value, target_condition):
+    """
+    Generic bisection search algorithm.
+
+    Parameters:
+        eval_func (callable): Function to evaluate the current value (e.g., CRF).
+                             Should return a tuple (value, evaluation_result).
+        min_value (int): Minimum value of the range to search.
+        max_value (int): Maximum value of the range to search.
+        target_condition (callable): Function to check if the evaluation result meets the desired condition.
+                                     Should return True if the condition is met.
+
+    Returns:
+        Tuple[int, any]: The optimal value and its corresponding evaluation result.
+    """
+    best_value = None
+    best_result = None
+
+    while min_value <= max_value:
+        mid_value = (min_value + max_value) // 2
+        eval_result = eval_func(mid_value)
+
+        if eval_result is not None and target_condition(eval_result):
+            best_value = mid_value
+            best_result = eval_result
+            min_value = mid_value + 1
+        else:
+            max_value = mid_value - 1
+
+    return best_value, best_result
+
 def find_optimal_crf(input_file, ext):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
-    crf_min, crf_max = 0, 51
-    best_crf = crf_min
-    best_quality = None
-    best_size = original_size
     filename = utils.split_path(input_file)[1]
 
     duration = get_video_duration(input_file)
@@ -96,10 +123,8 @@ def find_optimal_crf(input_file, ext):
 
     logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
 
-    while crf_min <= crf_max:
-        mid_crf = (crf_min + crf_max) // 2
+    def evaluate_crf(mid_crf):
         qualities = []
-
         with tempfile.TemporaryDirectory() as wd_dir:
             for i, (start, length) in enumerate(fragments):
                 fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.{ext}")
@@ -115,14 +140,12 @@ def find_optimal_crf(input_file, ext):
         avg_quality = sum(qualities) / len(qualities) if qualities else 0
         logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
 
-        if avg_quality >= 0.98:
-            best_crf = mid_crf
-            best_quality = avg_quality
-            crf_min = mid_crf + 1
-        else:
-            crf_max = mid_crf - 1
+        return avg_quality
 
-    logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf}")
+    crf_min, crf_max = 0, 51
+    best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= 0.98)
+
+    logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
     return best_crf
 
 def final_encode(input_file, basename, ext, crf, extra_params):
