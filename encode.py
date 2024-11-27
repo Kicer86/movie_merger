@@ -145,7 +145,10 @@ def find_optimal_crf(input_file, ext):
     crf_min, crf_max = 0, 51
     best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= 0.98)
 
-    logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
+    if best_crf is not None and best_quality is not None:
+        logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
+    else:
+        logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality.")
     return best_crf
 
 def final_encode(input_file, basename, ext, crf, extra_params):
