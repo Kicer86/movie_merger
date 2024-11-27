@@ -11,7 +11,7 @@ video_cache = pooch.create(
     path=pooch.os_cache("test_data"),
     base_url="https://www.sample-videos.com/",
     registry={
-        "video321/mp4/720/big_buck_bunny_720p_10mb.mp4": "md5:798ce2689035bc7ed07c1f9bf75f754c",
+        "video321/mp4/720/big_buck_bunny_720p_2mb.mp4": "md5:6cff9004d995b5c929ce90e391100996",
     },
 )
 
