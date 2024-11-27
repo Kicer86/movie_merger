@@ -109,10 +109,10 @@ def bisection_search(eval_func, min_value, max_value, target_condition):
 
     return best_value, best_result
 
-def find_optimal_crf(input_file, ext):
+def find_optimal_crf(input_file, requested_quality=0.98):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
-    filename = utils.split_path(input_file)[1]
+    _, filename, ext = utils.split_path(input_file)
 
     duration = get_video_duration(input_file)
     if not duration:
@@ -143,16 +143,18 @@ def find_optimal_crf(input_file, ext):
         return avg_quality
 
     crf_min, crf_max = 0, 51
-    best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= 0.98)
+    best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= requested_quality)
 
     if best_crf is not None and best_quality is not None:
         logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
     else:
-        logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality.")
+        logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({requested_quality}).")
     return best_crf
 
-def final_encode(input_file, basename, ext, crf, extra_params):
+def final_encode(input_file, crf, extra_params):
     """Perform the final encoding with the best CRF using the determined extra_params."""
+    _, basename, ext = utils.split_path(input_file)
+
     logging.info(f"Starting final encoding with CRF: {crf} and extra params: {extra_params}")
     final_output_file = f"{basename}.temp.{ext}"
     encode_video(input_file, final_output_file, crf, "veryslow", extra_params)
@@ -185,12 +187,10 @@ def main(directory):
 
     for file in video_files:
         logging.info(f"Processing {file}")
-        basename, ext = os.path.splitext(file)
-        ext = ext[1:]  # Remove the dot from the extension
-        best_crf = find_optimal_crf(file, ext)
+        best_crf = find_optimal_crf(file)
         if best_crf is not None and False:
             # increase crf by one as veryslow preset will be used, so result should be above 0.98 quality anyway
-            final_encode(file, basename, ext, best_crf + 1, [])
+            final_encode(file, best_crf + 1, [])
         logging.info(f"Finished processing {file}")
 
     logging.info("Video processing completed")
