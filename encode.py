@@ -132,13 +132,12 @@ def _encode_segment_and_compare(wd_dir: str, input_file: str, segment: int, star
 
 
 def _for_segments(segments, op):
-    with tempfile.TemporaryDirectory() as wd_dir:
-        with ThreadPoolExecutor() as executor:
-            def worker(i, start, length):
-                op(wd_dir, i, start, length)
+    with tempfile.TemporaryDirectory() as wd_dir, ThreadPoolExecutor() as executor:
+        def worker(i, start, length):
+            op(wd_dir, i, start, length)
 
-            for i, (start, length) in enumerate(segments):
-                executor.submit(worker, i, start, length)
+        for i, (start, length) in enumerate(segments):
+            executor.submit(worker, i, start, length)
 
 
 def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
