@@ -112,10 +112,27 @@ def bisection_search(eval_func, min_value, max_value, target_condition):
 
     return best_value, best_result
 
+
+def _encode_segment_and_compare(wd_dir: str, input_file: str, segment: int, start: int, length: int, crf: int) -> float or None:
+    _, filename, ext = utils.split_path(input_file)
+
+    encoded_fragment_output = os.path.join(wd_dir, f"{filename}_frag{segment}.enc.{ext}")
+
+    if start is not None and length is not None:
+        fragment_output = os.path.join(wd_dir, f"{filename}_frag{segment}.{ext}")
+        extract_fragment(input_file, start, length, fragment_output)
+    else:
+        fragment_output = input_file
+
+    encode_video(fragment_output, encoded_fragment_output, crf, "veryfast")
+
+    quality = calculate_quality(fragment_output, encoded_fragment_output)
+    return quality
+
+
 def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
-    _, filename, ext = utils.split_path(input_file)
 
     duration = get_video_duration(input_file)
     if not duration:
@@ -133,17 +150,7 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
         qualities = []
         with tempfile.TemporaryDirectory() as wd_dir:
             for i, (start, length) in enumerate(fragments):
-                encoded_fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.enc.{ext}")
-
-                if start is not None and length is not None:
-                    fragment_output = os.path.join(wd_dir, f"{filename}_frag{i}.{ext}")
-                    extract_fragment(input_file, start, length, fragment_output)
-                else:
-                    fragment_output = input_file
-
-                encode_video(fragment_output, encoded_fragment_output, mid_crf, "veryfast")
-
-                quality = calculate_quality(fragment_output, encoded_fragment_output)
+                quality = _encode_segment_and_compare(wd_dir, input_file, i, start, length, mid_crf)
                 if quality:
                     qualities.append(quality)
 
