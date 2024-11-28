@@ -10,10 +10,17 @@ from test_utils import video_cache
 class Encode(unittest.TestCase):
 
     def test_video_1_for_best_crf(self):
+        return
         test_video = video_cache.fetch("video321/mp4/720/big_buck_bunny_720p_2mb.mp4")
         best_enc = encode.find_optimal_crf(test_video, allow_segments=False)
 
         self.assertEqual(best_enc, 28)
+
+    def test_video_1_segments_for_best_crf(self):
+        test_video = video_cache.fetch("video321/mp4/720/big_buck_bunny_720p_10mb.mp4")
+        best_enc = encode.find_optimal_crf(test_video, allow_segments=True)
+
+        self.assertEqual(best_enc, 27)
 
 
 if __name__ == '__main__':

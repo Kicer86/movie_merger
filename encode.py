@@ -28,13 +28,16 @@ def get_video_duration(video_file):
         logging.error(f"Failed to get duration for {video_file}")
         return None
 
-def select_random_fragments(video_file, duration, num_fragments=5, fragment_length=5):
-    """Select random fragments from the video for analysis."""
-    fragments = []
-    for _ in range(num_fragments):
-        start_time = random.uniform(0, max(0, duration - fragment_length))
-        fragments.append((start_time, fragment_length))
-    return fragments
+def select_random_fragments(total_length, num_segments=5, segment_length=5):
+    if total_length <= 0 or num_segments <= 0 or segment_length <= 0:
+        raise ValueError("Total length, number of segments, and segment length must all be positive.")
+    if segment_length > total_length:
+        raise ValueError("Segment length cannot exceed total length.")
+    if num_segments * segment_length > total_length:
+        raise ValueError("Total segments cannot fit within the total length.")
+
+    step = (total_length - segment_length) / (num_segments - 1) if num_segments > 1 else 0
+    return [(round(i * step), segment_length) for i in range(num_segments)]
 
 def calculate_quality(original, encoded):
     """Calculate SSIM between original and encoded video."""
@@ -118,9 +121,9 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     if not duration:
         return None
 
-    if allow_segments:
+    if allow_segments and duration > 30:
         num_fragments = max(3, min(10, int(duration // 30)))
-        fragments = select_random_fragments(input_file, duration, num_fragments)
+        fragments = select_random_fragments(duration, num_fragments)
         logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
     else:
         fragments = [(None, None)]
