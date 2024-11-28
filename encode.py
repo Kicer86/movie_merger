@@ -130,6 +130,12 @@ def _encode_segment_and_compare(wd_dir: str, input_file: str, segment: int, star
     return quality
 
 
+def _for_segments(segments: [], op):
+    with tempfile.TemporaryDirectory() as wd_dir:
+        for i, (start, length) in enumerate(segments):
+            op(wd_dir, i, start, length)
+
+
 def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     """Find the optimal CRF using bisection."""
     original_size = os.path.getsize(input_file)
@@ -148,11 +154,13 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
 
     def evaluate_crf(mid_crf):
         qualities = []
-        with tempfile.TemporaryDirectory() as wd_dir:
-            for i, (start, length) in enumerate(fragments):
-                quality = _encode_segment_and_compare(wd_dir, input_file, i, start, length, mid_crf)
-                if quality:
-                    qualities.append(quality)
+
+        def get_quality(wd_dir, i, start, length,):
+            quality = _encode_segment_and_compare(wd_dir, input_file, i, start, length, mid_crf)
+            if quality:
+                qualities.append(quality)
+
+        _for_segments(fragments, get_quality)
 
         avg_quality = sum(qualities) / len(qualities) if qualities else 0
         logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
