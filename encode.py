@@ -5,6 +5,7 @@ import random
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 import utils
 
@@ -130,10 +131,14 @@ def _encode_segment_and_compare(wd_dir: str, input_file: str, segment: int, star
     return quality
 
 
-def _for_segments(segments: [], op):
+def _for_segments(segments, op):
     with tempfile.TemporaryDirectory() as wd_dir:
-        for i, (start, length) in enumerate(segments):
-            op(wd_dir, i, start, length)
+        with ThreadPoolExecutor() as executor:
+            def worker(i, start, length):
+                op(wd_dir, i, start, length)
+
+            for i, (start, length) in enumerate(segments):
+                executor.submit(worker, i, start, length)
 
 
 def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
