@@ -29,6 +29,11 @@ jobs:
           mkvtoolnix            \
           ffmpeg
 
+    - name: Cache video files
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/twotone_test_data
+        key: test-video-cache
 
     - name: Run unit tests
       run: |
