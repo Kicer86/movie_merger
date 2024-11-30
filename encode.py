@@ -75,16 +75,13 @@ def encode_video(input_file, output_file, crf, preset, extra_params=[]):
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def extract_fragment(video_file, start_time, fragment_length, output_file):
-    status = utils.start_process("ffmpeg",
-                        [ "-v", "error", "-stats", "-nostdin",
-                          "-fflags", "+genpts",
-                          "-ss", str(start_time), "-t", str(fragment_length),
-                          "-i", video_file, "-c", "copy", output_file
-                        ]
-    )
+    """ Extract video segment. Video is reencoded with lossless quality to rebuild damaged or troublesome videos """
+    encode_video(video_file,
+                 output_file,
+                 crf = 0,
+                 preset = "veryfast",
+                 extra_params = ["-ss", str(start_time), "-t", str(fragment_length)])
 
-    if status.returncode != 0:
-        raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
 def bisection_search(eval_func, min_value, max_value, target_condition):
     """
