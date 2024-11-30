@@ -119,30 +119,24 @@ def bisection_search(eval_func, min_value, max_value, target_condition):
     return best_value, best_result
 
 
-def _encode_segment_and_compare(wd_dir: str, input_file: str, segment: int, start: int, length: int, crf: int) -> float or None:
-    _, filename, ext = utils.split_path(input_file)
+def _encode_segment_and_compare(wd_dir: str, segment_file: str, crf: int) -> float or None:
+    _, filename, ext = utils.split_path(segment_file)
 
-    encoded_fragment_output = os.path.join(wd_dir, f"{filename}_frag{segment}.enc.{ext}")
+    encoded_segment_output = os.path.join(wd_dir, f"{filename}.enc.{ext}")
 
-    if start is not None and length is not None:
-        fragment_output = os.path.join(wd_dir, f"{filename}_frag{segment}.{ext}")
-        extract_fragment(input_file, start, length, fragment_output)
-    else:
-        fragment_output = input_file
+    encode_video(segment_file, encoded_segment_output, crf, "veryfast")
 
-    encode_video(fragment_output, encoded_fragment_output, crf, "veryfast")
-
-    quality = calculate_quality(fragment_output, encoded_fragment_output)
+    quality = calculate_quality(segment_file, encoded_segment_output)
     return quality
 
 
 def _for_segments(segments, op):
     with tempfile.TemporaryDirectory() as wd_dir, ThreadPoolExecutor() as executor:
-        def worker(i, start, length):
-            op(wd_dir, i, start, length)
+        def worker(file_path):
+            op(wd_dir, file_path)
 
-        for i, (start, length) in enumerate(segments):
-            executor.submit(worker, i, start, length)
+        for segment in segments:
+            executor.submit(worker, segment)
 
 
 def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
@@ -153,37 +147,52 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     if not duration:
         return None
 
-    if allow_segments and duration > 30:
-        num_fragments = max(3, min(10, int(duration // 30)))
-        fragments = select_random_fragments(duration, num_fragments)
-        logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
-    else:
-        fragments = [(None, None)]
-        logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using whole file")
+    with tempfile.TemporaryDirectory() as wd_dir:
+        segment_files = []
+        if allow_segments and duration > 30:
+            num_fragments = max(3, min(10, int(duration // 30)))
+            segments = select_random_fragments(duration, num_fragments)
+            logging.info(f"Picking {num_fragments} segments from {input_file}")
 
-    def evaluate_crf(mid_crf):
-        qualities = []
+            _, filename, ext = utils.split_path(input_file)
 
-        def get_quality(wd_dir, i, start, length,):
-            quality = _encode_segment_and_compare(wd_dir, input_file, i, start, length, mid_crf)
-            if quality:
-                qualities.append(quality)
+            for segment, (start, length) in enumerate(segments):
+                segment_output = os.path.join(wd_dir, f"{filename}_frag{segment}.{ext}")
+                extract_fragment(input_file, start, length, segment_output)
+                segment_files.append(segment_output)
 
-        _for_segments(fragments, get_quality)
+            logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
+        else:
+            segment_files = [input_file]
+            logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using whole file")
 
-        avg_quality = sum(qualities) / len(qualities) if qualities else 0
-        logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
+        def evaluate_crf(mid_crf):
+            qualities = []
 
-        return avg_quality
+            def get_quality(wd_dir, segment_file):
+                quality = _encode_segment_and_compare(wd_dir, segment_file, mid_crf)
+                if quality:
+                    qualities.append(quality)
 
-    crf_min, crf_max = 0, 51
-    best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= requested_quality)
+            _for_segments(segment_files, get_quality)
 
-    if best_crf is not None and best_quality is not None:
-        logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
-    else:
-        logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({requested_quality}).")
-    return best_crf
+            avg_quality = sum(qualities) / len(qualities) if qualities else 0
+            logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
+
+            return avg_quality
+
+        top_quality = evaluate_crf(0)
+        if top_quality < 0.998:
+            raise ValueError(f"Sanity check failed: top SSIM value: {top_quality} < 0.999")
+
+        crf_min, crf_max = 0, 51
+        best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= requested_quality)
+
+        if best_crf is not None and best_quality is not None:
+            logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
+        else:
+            logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({requested_quality}).")
+        return best_crf
 
 
 def final_encode(input_file, crf, extra_params):
@@ -216,6 +225,7 @@ def final_encode(input_file, crf, extra_params):
             f"Encoded file is larger than the original. Keeping the original file."
         )
 
+
 def main(directory):
     logging.info("Starting video processing")
     video_files = find_video_files(directory)
@@ -229,6 +239,7 @@ def main(directory):
         logging.info(f"Finished processing {file}")
 
     logging.info("Video processing completed")
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
