@@ -2,7 +2,6 @@
 import os
 import logging
 import random
-import subprocess
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -19,10 +18,11 @@ def find_video_files(directory):
                 video_files.append(os.path.join(root, file))
     return video_files
 
+
 def get_video_duration(video_file):
     """Get the duration of a video in seconds."""
-    cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+    result = utils.start_process("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file])
+
     try:
         return float(result.stdout.strip())
     except ValueError:
@@ -40,14 +40,17 @@ def select_random_fragments(total_length, num_segments=5, segment_length=5):
     step = (total_length - segment_length) / (num_segments - 1) if num_segments > 1 else 0
     return [(round(i * step), segment_length) for i in range(num_segments)]
 
+
 def calculate_quality(original, encoded):
     """Calculate SSIM between original and encoded video."""
-    cmd = [
-        "ffmpeg", "-i", original, "-i", encoded,
+    args = [
+        "-i", original, "-i", encoded,
         "-lavfi", "ssim", "-f", "null", "-"
     ]
-    result = subprocess.run(cmd, stderr=subprocess.PIPE, text=True)
-    ssim_line = [line for line in result.stderr.splitlines() if "All:" in line]
+
+    result = utils.start_process("ffmpeg", args)
+    ssim_line = [line for line in result.stderr.decode("utf-8").splitlines() if "All:" in line]
+
     if ssim_line:
         # Extract the SSIM value immediately after "All:"
         ssim_value = ssim_line[-1].split("All:")[1].split()[0]
@@ -56,13 +59,13 @@ def calculate_quality(original, encoded):
         except ValueError:
             logging.error(f"Failed to parse SSIM value: {ssim_value}")
             return None
+
     return None
 
 
 def encode_video(input_file, output_file, crf, preset, extra_params=[]):
     """Encode video with a given CRF, preset, and extra parameters."""
-    cmd = [
-        "ffmpeg",
+    args = [
         "-v", "error", "-stats", "-nostdin",
         "-i", input_file,
         *extra_params,
@@ -72,7 +75,8 @@ def encode_video(input_file, output_file, crf, preset, extra_params=[]):
         output_file
     ]
 
-    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    utils.start_process("ffmpeg", args)
+
 
 def extract_fragment(video_file, start_time, fragment_length, output_file):
     """ Extract video segment. Video is reencoded with lossless quality to rebuild damaged or troublesome videos """
@@ -180,6 +184,7 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     else:
         logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({requested_quality}).")
     return best_crf
+
 
 def final_encode(input_file, crf, extra_params):
     """Perform the final encoding with the best CRF using the determined extra_params."""
