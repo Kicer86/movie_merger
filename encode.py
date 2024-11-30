@@ -14,7 +14,7 @@ def find_video_files(directory):
     video_files = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.lower().endswith(('.mov', '.mp4', '.mkv')):
+            if utils.is_video(file):
                 video_files.append(os.path.join(root, file))
     return video_files
 
