@@ -58,15 +58,19 @@ def calculate_quality(original, encoded):
             return None
     return None
 
-def encode_video(input_file, output_file, crf, preset, extra_params=None):
+
+def encode_video(input_file, output_file, crf, preset, extra_params=[]):
     """Encode video with a given CRF, preset, and extra parameters."""
     cmd = [
-        "ffmpeg", "-v", "error", "-stats", "-nostdin", "-i", input_file,
+        "ffmpeg",
+        "-v", "error", "-stats", "-nostdin",
+        "-i", input_file,
+        *extra_params,
         "-c:v", "libx265", "-crf", str(crf), "-preset", preset,
-        "-profile:v", "main10", "-c:a", "copy", output_file
+        "-profile:v", "main10",
+        "-c:a", "copy",
+        output_file
     ]
-    if extra_params:
-        cmd.extend(extra_params)
 
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
