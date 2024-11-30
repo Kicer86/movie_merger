@@ -184,7 +184,7 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
 
         top_quality = evaluate_crf(0)
         if top_quality < 0.998:
-            raise ValueError(f"Sanity check failed: top SSIM value: {top_quality} < 0.999")
+            raise ValueError(f"Sanity check failed: top SSIM value: {top_quality} < 0.998")
 
         crf_min, crf_max = 0, 51
         best_crf, best_quality = bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= requested_quality)
