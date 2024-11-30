@@ -29,6 +29,7 @@ def get_video_duration(video_file):
         logging.error(f"Failed to get duration for {video_file}")
         return None
 
+
 def select_random_fragments(total_length, num_segments=5, segment_length=5):
     if total_length <= 0 or num_segments <= 0 or segment_length <= 0:
         raise ValueError("Total length, number of segments, and segment length must all be positive.")
