@@ -64,15 +64,16 @@ def calculate_quality(original, encoded):
     return None
 
 
-def encode_video(input_file, output_file, crf, preset, extra_params=[]):
+def encode_video(input_file, output_file, crf, preset, input_params=[], output_params=[]):
     """Encode video with a given CRF, preset, and extra parameters."""
     args = [
         "-v", "error", "-stats", "-nostdin",
+        *input_params,
         "-i", input_file,
-        *extra_params,
         "-c:v", "libx265", "-crf", str(crf), "-preset", preset,
         "-profile:v", "main10",
         "-c:a", "copy",
+        *output_params,
         output_file
     ]
 
@@ -85,7 +86,8 @@ def extract_fragment(video_file, start_time, fragment_length, output_file):
                  output_file,
                  crf = 0,
                  preset = "veryfast",
-                 extra_params = ["-ss", str(start_time), "-t", str(fragment_length)])
+                 output_params = ["-ss", str(start_time), "-t", str(fragment_length)])
+
 
 
 def bisection_search(eval_func, min_value, max_value, target_condition):
