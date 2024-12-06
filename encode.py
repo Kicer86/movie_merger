@@ -2,6 +2,7 @@
 import os
 import logging
 import random
+import re
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -28,6 +29,11 @@ def get_video_duration(video_file):
     except ValueError:
         logging.error(f"Failed to get duration for {video_file}")
         return None
+
+
+def validate_ffmpeg_result(result: utils.ProcessResult):
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
 
 
 def select_random_fragments(total_length, num_segments=5, segment_length=5):
@@ -70,14 +76,17 @@ def encode_video(input_file, output_file, crf, preset, input_params=[], output_p
         "-v", "error", "-stats", "-nostdin",
         *input_params,
         "-i", input_file,
-        "-c:v", "libx265", "-crf", str(crf), "-preset", preset,
+        "-c:v", "libx265",
+        "-crf", str(crf),
+        "-preset", preset,
         "-profile:v", "main10",
         "-c:a", "copy",
         *output_params,
         output_file
     ]
 
-    utils.start_process("ffmpeg", args)
+    result = utils.start_process("ffmpeg", args)
+    validate_ffmpeg_result(result)
 
 
 def extract_fragment(video_file, start_time, fragment_length, output_file):
@@ -86,8 +95,66 @@ def extract_fragment(video_file, start_time, fragment_length, output_file):
                  output_file,
                  crf = 0,
                  preset = "veryfast",
-                 output_params = ["-ss", str(start_time), "-t", str(fragment_length)])
+                 input_params = ["-ss", str(start_time), "-t", str(fragment_length)],
+                 output_params = ["-an"]            # remove audio - some codecs may cause issues with proper extraction
+    )
 
+
+def extract_scenes(video_file, output_dir, segment_duration=5):
+    """
+    Extracts video segments around detected scene changes, merging nearby timestamps.
+
+    Parameters:
+        video_file (str): Path to the input video file.
+        output_dir (str): Directory where the extracted video segments will be saved.
+        segment_duration (int): Minimum duration (in seconds) of each segment.
+
+    Returns:
+        list: Full paths to the generated video files.
+    """
+
+    # FFmpeg command to detect scene changes and log timestamps
+    args = [
+        "-i", video_file,
+        "-vf", "select='gt(scene,0.6)',showinfo",
+        "-vsync", "vfr", "-f", "null", "/dev/null"
+    ]
+
+    result = utils.start_process("ffmpeg", args)
+
+        # Parse timestamps from the ffmpeg output
+    timestamps = []
+    showinfo_output = result.stderr.decode("utf-8")
+    for line in showinfo_output.splitlines():
+        match = re.search(r"pts_time:(\d+(\.\d+)?)", line)
+        if match:
+            timestamps.append(float(match.group(1)))
+
+    # Generate segments with padding
+    segments = []
+    for timestamp in timestamps:
+        start = max(0, timestamp - segment_duration / 2)
+        end = timestamp + segment_duration / 2
+        segments.append((start, end))
+
+    # Merge overlapping segments
+    merged_segments = []
+    for start, end in sorted(segments):
+        if not merged_segments or start > merged_segments[-1][1]:  # No overlap
+            merged_segments.append((start, end))
+        else:  # Overlap detected, merge
+            merged_segments[-1] = (merged_segments[-1][0], max(merged_segments[-1][1], end))
+
+    # Extract and save the merged segments
+    output_files = []
+    _, filename, ext = utils.split_path(video_file)
+
+    for i, (start, end) in enumerate(merged_segments):
+        output_file = os.path.join(output_dir, f"{filename}.frag{i}.{ext}")
+        extract_fragment(video_file, start, end - start, output_file)
+        output_files.append(output_file)
+
+    return output_files
 
 
 def bisection_search(eval_func, min_value, max_value, target_condition):
@@ -153,18 +220,9 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
     with tempfile.TemporaryDirectory() as wd_dir:
         segment_files = []
         if allow_segments and duration > 30:
-            num_fragments = max(3, min(10, int(duration // 30)))
-            segments = select_random_fragments(duration, num_fragments)
-            logging.info(f"Picking {num_fragments} segments from {input_file}")
-
-            _, filename, ext = utils.split_path(input_file)
-
-            for segment, (start, length) in enumerate(segments):
-                segment_output = os.path.join(wd_dir, f"{filename}_frag{segment}.{ext}")
-                extract_fragment(input_file, start, length, segment_output)
-                segment_files.append(segment_output)
-
-            logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {num_fragments} fragments")
+            logging.info(f"Picking segments from {input_file}")
+            segment_files = extract_scenes(input_file, wd_dir)
+            logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {len(segment_files)} fragments")
         else:
             segment_files = [input_file]
             logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using whole file")
