@@ -36,7 +36,7 @@ def validate_ffmpeg_result(result: utils.ProcessResult):
         raise RuntimeError(result.stderr)
 
 
-def select_random_fragments(total_length, num_segments=5, segment_length=5):
+def select_random_segments(total_length, num_segments=5, segment_length=5):
     if total_length <= 0 or num_segments <= 0 or segment_length <= 0:
         raise ValueError("Total length, number of segments, and segment length must all be positive.")
     if segment_length > total_length:
@@ -89,13 +89,13 @@ def encode_video(input_file, output_file, crf, preset, input_params=[], output_p
     validate_ffmpeg_result(result)
 
 
-def extract_fragment(video_file, start_time, fragment_length, output_file):
+def extract_segment(video_file, start_time, segment_length, output_file):
     """ Extract video segment. Video is reencoded with lossless quality to rebuild damaged or troublesome videos """
     encode_video(video_file,
                  output_file,
                  crf = 0,
                  preset = "veryfast",
-                 input_params = ["-ss", str(start_time), "-t", str(fragment_length)],
+                 input_params = ["-ss", str(start_time), "-t", str(segment_length)],
                  output_params = ["-an"]            # remove audio - some codecs may cause issues with proper extraction
     )
 
@@ -151,7 +151,7 @@ def extract_scenes(video_file, output_dir, segment_duration=5):
 
     for i, (start, end) in enumerate(merged_segments):
         output_file = os.path.join(output_dir, f"{filename}.frag{i}.{ext}")
-        extract_fragment(video_file, start, end - start, output_file)
+        extract_segment(video_file, start, end - start, output_file)
         output_files.append(output_file)
 
     return output_files
@@ -222,7 +222,7 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
         if allow_segments and duration > 30:
             logging.info(f"Picking segments from {input_file}")
             segment_files = extract_scenes(input_file, wd_dir)
-            logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {len(segment_files)} fragments")
+            logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {len(segment_files)} segments")
         else:
             segment_files = [input_file]
             logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using whole file")
