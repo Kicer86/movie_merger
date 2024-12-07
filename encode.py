@@ -157,6 +157,23 @@ def extract_scenes(video_file, output_dir, segment_duration=5):
     return output_files
 
 
+def extract_segments(video_file, output_dir, segment_duration=5):
+    segment_files = []
+
+    duration = get_video_duration(video_file)
+    num_segments = max(3, min(10, int(duration // 30)))
+    segments = select_random_segments(duration, num_segments)
+
+    _, filename, ext = utils.split_path(video_file)
+
+    for segment, (start, length) in enumerate(segments):
+        segment_output = os.path.join(output_dir, f"{filename}_frag{segment}.{ext}")
+        extract_segment(video_file, start, length, segment_output)
+        segment_files.append(segment_output)
+
+    return segment_files
+
+
 def bisection_search(eval_func, min_value, max_value, target_condition):
     """
     Generic bisection search algorithm.
@@ -222,6 +239,9 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
         if allow_segments and duration > 30:
             logging.info(f"Picking segments from {input_file}")
             segment_files = extract_scenes(input_file, wd_dir)
+            if len(segment_files) < 2:
+                segment_files = extract_segments(input_file, wd_dir)
+
             logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using {len(segment_files)} segments")
         else:
             segment_files = [input_file]
