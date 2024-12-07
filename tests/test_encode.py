@@ -9,7 +9,7 @@ from common import TestDataWorkingDirectory, get_video
 class Encode(unittest.TestCase):
 
     def test_video_1_for_best_crf(self):
-        test_video = "big_buck_bunny_720p_2mb.mp4"
+        test_video = get_video("big_buck_bunny_720p_2mb.mp4")
         best_enc = encode.find_optimal_crf(test_video, allow_segments=False)
 
         self.assertEqual(best_enc, 28)
