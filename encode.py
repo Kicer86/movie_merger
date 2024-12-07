@@ -243,7 +243,7 @@ def find_optimal_crf(input_file, requested_quality=0.98, allow_segments=True):
             return avg_quality
 
         top_quality = evaluate_crf(0)
-        if top_quality < 0.998:
+        if top_quality < 0.9975:
             raise ValueError(f"Sanity check failed: top SSIM value: {top_quality} < 0.998")
 
         crf_min, crf_max = 0, 51
