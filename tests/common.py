@@ -62,6 +62,10 @@ def add_test_media(filter: str, test_case_path: str, suffixes: [str] = [None]):
                                 os.path.join(test_case_path, dst_file_name))
 
 
+def get_video(name: str) -> str:
+    return os.path.join(current_path, "videos", name)
+
+
 def hashes(path: str) -> [()]:
     results = []
 

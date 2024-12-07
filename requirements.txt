@@ -1,4 +1,3 @@
 cchardet
 langid
-pooch
 tqdm
