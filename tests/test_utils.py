@@ -3,7 +3,6 @@ import os
 import unittest
 
 import utils
-import pooch
 from common import TestDataWorkingDirectory
 
 
