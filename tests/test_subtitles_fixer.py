@@ -1,4 +1,5 @@
 
+import logging
 import os
 import unittest
 import tempfile
@@ -67,6 +68,9 @@ def create_broken_video_with_incompatible_subtitles(output_video_path: str, inpu
 
 
 class SubtitlesFixer(unittest.TestCase):
+
+    def setUp(self):
+        logging.getLogger().setLevel(logging.ERROR)
 
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:

@@ -1,4 +1,5 @@
 
+import logging
 import os.path
 import re
 import subprocess
@@ -40,6 +41,9 @@ def get_default_media_set_regex():
 
 
 class SubtitlesMerge(unittest.TestCase):
+
+    def setUp(self):
+        logging.getLogger().setLevel(logging.ERROR)
 
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
