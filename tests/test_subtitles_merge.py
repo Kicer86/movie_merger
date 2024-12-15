@@ -1,5 +1,7 @@
 
+import logging
 import os.path
+import re
 import subprocess
 import unittest
 
@@ -7,12 +9,45 @@ import utils
 import twotone
 from common import TestDataWorkingDirectory, list_files, add_test_media, hashes
 
+default_video_set = [
+    "Atoms - 8579.mp4",
+    "Blue_Sky_and_Clouds_Timelapse_0892__Videvo.mov",
+    "close-up-of-flowers-13554420.mp4",
+    "DSC_8073.MP4",
+    "fog-over-mountainside-13008647.mp4",
+    "Frog - 113403.mp4",
+    "Grass - 66810.mp4",
+    "herd-of-horses-in-fog-13642605.mp4",
+    "moon_23.976.mp4",
+    "moon_dark.mp4",
+    "moon.mp4",
+    "sea-waves-crashing-on-beach-shore-4793288.mp4",
+    "Woman - 58142.mp4"
+]
+
+
+def get_default_media_set_regex():
+    media = []
+    for video in default_video_set:
+        video_escaped = re.escape(video)
+        media.append(video_escaped)
+
+        subtitle = utils.split_path(video)[1] + ".srt"
+        subtitle_escaped = re.escape(subtitle)
+        media.append(subtitle_escaped)
+
+    filter = "|".join(media)
+    return filter
+
 
 class SubtitlesMerge(unittest.TestCase):
 
+    def setUp(self):
+        logging.getLogger().setLevel(logging.ERROR)
+
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
-            add_test_media(".*mp4|.*MP4|.*mov|.*srt", td.path)
+            add_test_media(get_default_media_set_regex(), td.path)
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2 * 13)        # 13 videos and 13 subtitles expected
@@ -34,7 +69,7 @@ class SubtitlesMerge(unittest.TestCase):
 
     def test_many_videos_conversion(self):
         with TestDataWorkingDirectory() as td:
-            add_test_media(".*MP4|.*mp4|.*mov|.*srt", td.path)
+            add_test_media(get_default_media_set_regex(), td.path)
 
             files_before = list_files(td.path)
             self.assertEqual(len(files_before), 2 * 13)         # 13 videos and 13 subtitles expected

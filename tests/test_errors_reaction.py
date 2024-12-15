@@ -99,5 +99,6 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(hashes_before, hashes_after)
             self.assertEqual(mock_start_process.call_count, 2)
 
+
 if __name__ == '__main__':
     unittest.main()
