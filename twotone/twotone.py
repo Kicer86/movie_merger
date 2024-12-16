@@ -3,12 +3,12 @@ import argparse
 import logging
 import sys
 
-from .tools import merge, subtitles_fixer, encode
+from .tools import merge, subtitles_fixer, transcode
 
 TOOLS = {
     "merge": (merge.setup_parser, merge.run, "Batch tool: merge video file with subtitles into one MKV file"),
     "subtitles_fix": (subtitles_fixer.setup_parser, subtitles_fixer.run, "Batch tool: fixes some specific issues with subtitles. Do not use until you are sure it will help for your problems."),
-    "encode": (encode.setup_parser, encode.run, "Batch tool: transcode videos preserving quality."),
+    "transcode": (transcode.setup_parser, transcode.run, "Batch tool: transcode videos preserving quality."),
 }
 
 
