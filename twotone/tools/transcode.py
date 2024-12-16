@@ -11,8 +11,9 @@ from concurrent.futures import ThreadPoolExecutor
 from . import utils
 
 class Transcoder(utils.InterruptibleProcess):
-    def __init__(self):
+    def __init__(self, no_dry_run: bool):
         super().__init__()
+        self.no_dry_run = no_dry_run
 
 
     def _find_video_files(self, directory):
@@ -313,7 +314,7 @@ class Transcoder(utils.InterruptibleProcess):
             self._check_for_stop()
             logging.info(f"Processing {file}")
             best_crf = self.find_optimal_crf(file)
-            if best_crf is not None and False:
+            if best_crf is not None and self.no_dry_run:
                 # increase crf by one as veryslow preset will be used, so result should be above 0.98 quality anyway
                 self._final_transcode(file, best_crf + 1, [])
             logging.info(f"Finished processing {file}")
@@ -322,18 +323,23 @@ class Transcoder(utils.InterruptibleProcess):
 
 
 def setup_parser(parser: argparse.ArgumentParser):
-    pass
+    parser.add_argument('videos_path',
+                        nargs=1,
+                        help='Path with videos to transcode.')
 
 
 def run(args):
-    pass
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    transcoder = Transcoder(args.no_dry_run)
+    transcoder.transcode(args.videos_path[0])
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python transcode.py /path/to/directory")
-        sys.exit(1)
-
+if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    directory = sys.argv[1]
-    Transcoder().transcode(directory)
+    try:
+        run(sys.argv[1:])
+    except RuntimeError as e:
+        logging.error(f"Unexpected error occurred: {e}. Terminating")
+        exit(1)
