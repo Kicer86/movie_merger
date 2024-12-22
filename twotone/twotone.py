@@ -12,11 +12,22 @@ TOOLS = {
 
 def main(argv):
     parser = argparse.ArgumentParser(
-        description="Videos manipulation toolkit",
+        description='Videos manipulation toolkit. '
+                    'By default all tools do nothing but showing what would be done. '
+                    'Use --no-dry-run option to perform actual operation. '
+                    'Please mind that ALL source files will be modified, so consider making a backup. '
+                    'It is safe to stop any tool with ctrl+c - it will quit '
+                    'gracefully in a while.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--verbose",
+                        action="store_true",
+                        help="Enable verbose output")
+    parser.add_argument("--no-dry-run", "-r",
+                        action='store_true',
+                        default=False,
+                        help='Perform actual operation.')
     subparsers = parser.add_subparsers(dest="tool", help="Available tools:")
 
     for tool_name, (setup_parser, _, desc) in TOOLS.items():
@@ -32,6 +43,9 @@ def main(argv):
     if args.tool is None:
         parser.print_help()
         sys.exit(1)
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     if args.tool in TOOLS:
         TOOLS[args.tool][1](args)
