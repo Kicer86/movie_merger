@@ -12,7 +12,7 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 from collections import namedtuple
 from pathlib import Path
 
-import tools.utils as utils
+from . import utils
 
 
 work = True

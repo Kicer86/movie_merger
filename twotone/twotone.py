@@ -3,7 +3,7 @@ import argparse
 import logging
 import sys
 
-from tools import merge
+from .tools import merge
 
 TOOLS = {
     "merge": (merge.setup_parser, merge.run, "Batch tool: merge video file with subtitles into one MKV file"),
