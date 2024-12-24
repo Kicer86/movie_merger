@@ -2,7 +2,7 @@
 import os
 import unittest
 
-import utils
+import twotone.tools.utils as utils
 from common import TestDataWorkingDirectory
 
 

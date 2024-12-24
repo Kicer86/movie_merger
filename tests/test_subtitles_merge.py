@@ -5,8 +5,8 @@ import re
 import subprocess
 import unittest
 
-import utils
-import twotone
+import twotone.tools.utils as utils
+import twotone.twotone as twotone
 from common import TestDataWorkingDirectory, list_files, add_test_media, hashes
 
 default_video_set = [
@@ -236,7 +236,7 @@ class SubtitlesMerge(unittest.TestCase):
 
             # create mkv file
             add_test_media("Woman.*(mp4|srt)", td.path)
-            twotone.run([td.path, "--no-dry-run"])
+            twotone.main(["merge", td.path, "--no-dry-run"])
 
             # copy original file one again
             add_test_media("Woman.*(mp4|srt)", td.path)
