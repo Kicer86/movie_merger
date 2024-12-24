@@ -38,7 +38,7 @@ def main(argv):
         )
         setup_parser(tool_parser)
 
-    args = parser.parse_args()
+    args = parser.parse_args(args = argv)
 
     if args.tool is None:
         parser.print_help()
