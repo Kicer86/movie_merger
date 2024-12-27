@@ -349,12 +349,3 @@ def run(args):
 
     transcoder = Transcoder(live_run = args.no_dry_run, target_ssim = args.ssim)
     transcoder.transcode(args.videos_path[0])
-
-
-if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    try:
-        run(sys.argv[1:])
-    except RuntimeError as e:
-        logging.error(f"Unexpected error occurred: {e}. Terminating")
-        exit(1)
