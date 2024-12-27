@@ -25,7 +25,8 @@ class TwoTone(utils.InterruptibleProcess):
         self.dry_run = dry_run
         self.language = language
         self.to_be_removed = []
-        self.lang_priority = [] if not lang_priority or lang_priority == "" else lang_priority.split(",")
+        self.lang_priority = [
+        ] if not lang_priority or lang_priority == "" else lang_priority.split(",")
 
     def _get_temporary_file(self, ext: str) -> str:
         tmp_file = tempfile.mkstemp(suffix="."+ext)
@@ -48,7 +49,8 @@ class TwoTone(utils.InterruptibleProcess):
 
     def _build_subtitle_from_path(self, path: str) -> utils.SubtitleFile:
         encoding = utils.file_encoding(path)
-        language = self.language if self.language != "auto" else self._guess_language(path, encoding)
+        language = self.language if self.language != "auto" else self._guess_language(
+            path, encoding)
 
         return utils.SubtitleFile(path, language, encoding)
 
@@ -84,7 +86,8 @@ class TwoTone(utils.InterruptibleProcess):
                         found_subtitles.append(entry.path)
 
         # if we got here, then no video was found at this level
-        subtitles = [self._build_subtitle_from_path(subtitle) for subtitle in found_subtitles]
+        subtitles = [self._build_subtitle_from_path(
+            subtitle) for subtitle in found_subtitles]
 
         for subdir in found_subdirs:
             sub_subtitles = self._recursive_subtitle_search(subdir)
@@ -116,7 +119,8 @@ class TwoTone(utils.InterruptibleProcess):
     def _sort_subtitles(self, subtitles: [utils.SubtitleFile]) -> [utils.SubtitleFile]:
         priorities = self.lang_priority.copy()
         priorities.append(None)
-        subtitles_sorted = sorted(subtitles, key=lambda s: self._get_index_for(priorities, s.language))
+        subtitles_sorted = sorted(
+            subtitles, key=lambda s: self._get_index_for(priorities, s.language))
 
         return subtitles_sorted
 
@@ -146,9 +150,11 @@ class TwoTone(utils.InterruptibleProcess):
                     utils.fix_subtitles_fps(input_file, output_file, fps)
 
             else:
-                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
+                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{
+                                   status.stderr.decode('utf-8')}")
 
-            converted_subtitle = utils.SubtitleFile(output_file, subtitle.language, "utf-8")
+            converted_subtitle = utils.SubtitleFile(
+                output_file, subtitle.language, "utf-8")
 
         return converted_subtitle
 
@@ -175,7 +181,8 @@ class TwoTone(utils.InterruptibleProcess):
         # make sure output file does not exist
         i = 1
         while os.path.exists(output_video):
-            output_video = video_dir + "/" + video_name + "." + str(i) + "." + "mkv"
+            output_video = video_dir + "/" + \
+                video_name + "." + str(i) + "." + "mkv"
             i += 1
 
         # register input for removal
@@ -183,12 +190,15 @@ class TwoTone(utils.InterruptibleProcess):
 
         # set subtitles and languages
         sorted_subtitles = self._sort_subtitles(subtitles)
-        sorted_subtitles_str = ", ".join([subtitle.language if subtitle.language is not None else "unknown" for subtitle in sorted_subtitles])
-        logging.info(f"Merging with subtitles in languages: [{sorted_subtitles_str}]")
+        sorted_subtitles_str = ", ".join(
+            [subtitle.language if subtitle.language is not None else "unknown" for subtitle in sorted_subtitles])
+        logging.info(
+            f"Merging with subtitles in languages: [{sorted_subtitles_str}]")
 
         prepared_subtitles = []
         for subtitle in sorted_subtitles:
-            logging.debug(f"\tregister subtitle [{subtitle.language}]: {subtitle.path}")
+            logging.debug(f"\tregister subtitle [{subtitle.language}]: {
+                          subtitle.path}")
             self._register_input(subtitle.path)
 
             # Subtitles are buggy sometimes, use ffmpeg to fix them.
@@ -201,7 +211,8 @@ class TwoTone(utils.InterruptibleProcess):
         # perform
         logging.debug("\tMerge in progress...")
         if not self.dry_run:
-            utils.generate_mkv(input_video=input_video, output_path=output_video, subtitles=prepared_subtitles)
+            utils.generate_mkv(
+                input_video=input_video, output_path=output_video, subtitles=prepared_subtitles)
 
         # Remove all inputs and temporary files. Only output file should left
         self._remove()
@@ -221,7 +232,7 @@ class TwoTone(utils.InterruptibleProcess):
         logging.debug(f"Finding videos in {path}")
         videos_and_subtitles = []
 
-        for cd, _, files in os.walk(path, followlinks = True):
+        for cd, _, files in os.walk(path, followlinks=True):
             video_files = []
             for file in files:
                 self._check_for_stop()
@@ -233,12 +244,14 @@ class TwoTone(utils.InterruptibleProcess):
             # check if number of unique file names (excluding extensions) is equal to number of files (including extensions).
             # if no, then it means there are at least two video files with the same name but different extension.
             # this is a cumbersome situation so just don't allow it
-            unique_names = set( Path(video).stem for video in video_files)
+            unique_names = set(Path(video).stem for video in video_files)
             if len(unique_names) != len(video_files):
-                logging.warning(f"Two video files with the same name found in {cd}. This is not supported, skipping whole directory.")
+                logging.warning(f"Two video files with the same name found in {
+                                cd}. This is not supported, skipping whole directory.")
                 continue
 
-            subtitles_finder = self._aggressive_subtitle_search if len(video_files) == 1 else self._simple_subtitle_search
+            subtitles_finder = self._aggressive_subtitle_search if len(
+                video_files) == 1 else self._simple_subtitle_search
             for video_file in video_files:
                 vs = self._process_video(video_file, subtitles_finder)
                 if vs is not None:

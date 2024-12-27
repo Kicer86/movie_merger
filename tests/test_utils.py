@@ -22,7 +22,8 @@ class UtilsTests(unittest.TestCase):
 
     def _test_conversion(self, wd: str, file: str, needs_conversion: bool):
         full_path = os.path.join(wd, file)
-        self.assertEqual(utils.is_subtitle_conversion_required(full_path), needs_conversion)
+        self.assertEqual(utils.is_subtitle_conversion_required(
+            full_path), needs_conversion)
 
     def test_subtitle_detection(self):
         self._test_content("12:34:56:test", True)

@@ -20,11 +20,14 @@ VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles path")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
-subtitle_format2 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
+subtitle_format2 = re.compile(
+    "(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags=re.MULTILINE)
 microdvd_time_pattern = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
-subrip_time_pattern = re.compile(r'(\d+:\d{2}:\d{2},\d{3}) --> (\d+:\d{2}:\d{2},\d{3})')
+subrip_time_pattern = re.compile(
+    r'(\d+:\d{2}:\d{2},\d{3}) --> (\d+:\d{2}:\d{2},\d{3})')
 
-ffmpeg_default_fps = 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
+# constant taken from https://trac.ffmpeg.org/ticket/3287
+ffmpeg_default_fps = 23.976
 
 
 def start_process(process: str, args: [str]) -> ProcessResult:
@@ -32,7 +35,8 @@ def start_process(process: str, args: [str]) -> ProcessResult:
     command.extend(args)
 
     logging.debug(f"Starting {process} with options: {' '.join(args)}")
-    sub_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    sub_process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
     stdout, stderr = sub_process.communicate()
 
     logging.debug(f"Process finished with {sub_process.returncode}")
@@ -70,7 +74,7 @@ def is_subtitle(file: str) -> bool:
         if encoding:
             logging.debug(f"\tOpening file with encoding {encoding}")
 
-            with open(file, 'r', encoding = encoding) as text_file:
+            with open(file, 'r', encoding=encoding) as text_file:
                 head = "".join(islice(text_file, 5)).strip()
 
                 for subtitle_format in [subtitle_format1, microdvd_time_pattern, subtitle_format2]:
@@ -83,7 +87,7 @@ def is_subtitle(file: str) -> bool:
 
 
 def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
-    with open(subtitle.path, 'r', encoding = subtitle.encoding) as text_file:
+    with open(subtitle.path, 'r', encoding=subtitle.encoding) as text_file:
         head = "".join(islice(text_file, 5)).strip()
 
         if microdvd_time_pattern.match(head):
@@ -138,7 +142,7 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     # and rewrite file as we need a copy in output_path anyway.
     # A simple file copying would do the job, but I just want to use the same
     # mechanism in all scenarios
-    if math.isclose(multiplier, 1, rel_tol = 0.001):
+    if math.isclose(multiplier, 1, rel_tol=0.001):
         multiplier = 1
 
     with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
@@ -149,7 +153,8 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
 
 def get_video_duration(video_file):
     """Get the duration of a video in seconds."""
-    result = start_process("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file])
+    result = start_process("ffprobe", ["-v", "error", "-show_entries",
+                           "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file])
 
     try:
         return int(float(result.stdout.strip())*1000)
@@ -169,7 +174,8 @@ def get_video_full_info(path: str) -> str:
     process = start_process("ffprobe", args)
 
     if process.returncode != 0:
-        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
+        raise RuntimeError(f"ffprobe exited with unexpected error:\n{
+                           process.stderr.decode('utf-8')}")
 
     output_lines = process.stdout
     output_str = output_lines.decode('utf8')
@@ -214,7 +220,8 @@ def get_video_data(path: str) -> [VideoInfo]:
             tid = stream["index"]
             format = stream["codec_name"]
 
-            subtitles.append(Subtitle(language, default=is_default, length=length, tid=tid, format=format))
+            subtitles.append(Subtitle(language, default=is_default,
+                             length=length, tid=tid, format=format))
         elif stream_type == "video":
             fps = stream["r_frame_rate"]
             length = get_length(stream)
@@ -261,7 +268,8 @@ def generate_mkv(input_video: str, output_path: str, subtitles: [SubtitleFile]):
     if result.returncode != 0:
         if os.path.exists(output_path):
             os.remove(output_path)
-        raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
+        raise RuntimeError(f"{cmd} exited with unexpected error:\n{
+                           result.stderr.decode('utf-8')}")
 
     if not os.path.exists(output_path):
         logging.error("Output file was not created")

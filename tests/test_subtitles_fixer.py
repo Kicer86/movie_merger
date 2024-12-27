@@ -17,7 +17,8 @@ def create_broken_video_with_scaled_subtitle_timings(output_video_path: str, inp
         fps = utils.fps_str_to_float(default_video_track.fps)
 
         if abs(fps - utils.ffmpeg_default_fps) < 1:
-            raise RuntimeError("source video is not suitable, has nearly default fps")
+            raise RuntimeError(
+                "source video is not suitable, has nearly default fps")
 
         length = default_video_track.length
 
@@ -26,9 +27,11 @@ def create_broken_video_with_scaled_subtitle_timings(output_video_path: str, inp
 
         # convert to srt format
         srt_subtitle_path = f"{subtitle_dir}/sub.srt"
-        status = utils.start_process("ffmpeg", ["-hide_banner", "-y", "-i", subtitle_path, srt_subtitle_path])
+        status = utils.start_process(
+            "ffmpeg", ["-hide_banner", "-y", "-i", subtitle_path, srt_subtitle_path])
 
-        utils.generate_mkv(input_video, output_video_path, [utils.SubtitleFile(srt_subtitle_path, "eng", "utf8")])
+        utils.generate_mkv(input_video, output_video_path, [
+                           utils.SubtitleFile(srt_subtitle_path, "eng", "utf8")])
 
 
 def create_broken_video_with_too_long_last_subtitle(output_video_path: str, input_video: str):
@@ -44,10 +47,12 @@ def create_broken_video_with_too_long_last_subtitle(output_video_path: str, inpu
             file.write(f"1\n\n")
 
             file.write(f"2\n")
-            file.write(f"{utils.ms_to_time(1000)} --> {utils.ms_to_time((length + 10) * 1000)}\n")
+            file.write(f"{utils.ms_to_time(1000)
+                          } --> {utils.ms_to_time((length + 10) * 1000)}\n")
             file.write(f"2\n")
 
-        utils.generate_mkv(input_video, output_video_path, [utils.SubtitleFile(subtitle_path, "eng", "utf8")])
+        utils.generate_mkv(input_video, output_video_path, [
+                           utils.SubtitleFile(subtitle_path, "eng", "utf8")])
 
 
 def create_broken_video_with_incompatible_subtitles(output_video_path: str, input_video: str):
@@ -57,14 +62,16 @@ def create_broken_video_with_incompatible_subtitles(output_video_path: str, inpu
         fps = utils.fps_str_to_float(default_video_track.fps)
 
         if abs(fps - utils.ffmpeg_default_fps) < 1:
-            raise RuntimeError("source video is not suitable, has nearly default fps")
+            raise RuntimeError(
+                "source video is not suitable, has nearly default fps")
 
         length = default_video_track.length
 
         subtitle_path = f"{subtitle_dir}/sub.sub"
         generate_microdvd_subtitles(subtitle_path, int(length), fps)
 
-        utils.start_process("ffmpeg", ["-hide_banner", "-i", input_video, "-i", subtitle_path, "-map", "0", "-map", "1", "-c:v", "copy", "-c:a", "copy", output_video_path])
+        utils.start_process("ffmpeg", ["-hide_banner", "-i", input_video, "-i", subtitle_path,
+                            "-map", "0", "-map", "1", "-c:v", "copy", "-c:a", "copy", output_video_path])
 
 
 class SubtitlesFixer(unittest.TestCase):
@@ -75,7 +82,8 @@ class SubtitlesFixer(unittest.TestCase):
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{
+                                                             current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["subtitles_fix", td.path])
@@ -86,7 +94,8 @@ class SubtitlesFixer(unittest.TestCase):
     def test_video_with_scaled_subtitle_timings_fixing(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{
+                                                             current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["-r", "subtitles_fix", td.path])
@@ -102,7 +111,8 @@ class SubtitlesFixer(unittest.TestCase):
     def test_video_with_too_long_last_subtitle_fixing(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_too_long_last_subtitle(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_too_long_last_subtitle(output_video_path, f"{
+                                                            current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["-r", "subtitles_fix", td.path])
@@ -118,13 +128,15 @@ class SubtitlesFixer(unittest.TestCase):
     def test_deal_with_incompatible_videos(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_incompatible_subtitles(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_incompatible_subtitles(output_video_path, f"{
+                                                            current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["-r", "subtitles_fix", td.path])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
+
 
 if __name__ == '__main__':
     unittest.main()

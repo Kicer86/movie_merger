@@ -14,7 +14,7 @@ TOOLS = {
 
 def execute(argv):
     parser = argparse.ArgumentParser(
-        prog = 'twotone',
+        prog='twotone',
         description='Videos manipulation toolkit. '
                     'By default all tools do nothing but showing what would be done. '
                     'Use --no-dry-run option to perform actual operation. '
@@ -41,7 +41,7 @@ def execute(argv):
         )
         setup_parser(tool_parser)
 
-    args = parser.parse_args(args = argv)
+    args = parser.parse_args(args=argv)
 
     if args.tool is None:
         parser.print_help()
@@ -56,6 +56,7 @@ def execute(argv):
         print(f"Error: Unknown tool {args.tool}")
         sys.exit(1)
 
+
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     try:
@@ -63,6 +64,7 @@ def main():
     except RuntimeError as e:
         logging.error(f"Unexpected error occurred: {e}. Terminating")
         exit(1)
+
 
 if __name__ == '__main__':
     main()

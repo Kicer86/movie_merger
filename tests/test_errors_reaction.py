@@ -14,7 +14,6 @@ class SimpleSubtitlesMerge(unittest.TestCase):
     def setUpClass(cls):
         cls._start_process = utils.start_process
 
-
     def test_no_changes_when_mkvmerge_exits_with_error(self):
 
         def start_process(cmd, args):
@@ -27,7 +26,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
         with patch("twotone.tools.utils.start_process") as mock_start_process, TestDataWorkingDirectory() as td:
             mock_start_process.side_effect = start_process
-            add_test_media("Blue_Sky_and_Clouds_Timelapse.*(?:mov|srt)", td.path)
+            add_test_media(
+                "Blue_Sky_and_Clouds_Timelapse.*(?:mov|srt)", td.path)
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
@@ -41,7 +41,6 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(hashes_before, hashes_after)
             self.assertEqual(mock_start_process.call_count, 3)
 
-
     def test_no_changes_when_ffprobe_exits_with_error(self):
 
         def start_process(cmd, args):
@@ -54,7 +53,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
         with patch("twotone.tools.utils.start_process") as mock_start_process, TestDataWorkingDirectory() as td:
             mock_start_process.side_effect = start_process
-            add_test_media("Blue_Sky_and_Clouds_Timelapse.*(?:mov|srt)", td.path)
+            add_test_media(
+                "Blue_Sky_and_Clouds_Timelapse.*(?:mov|srt)", td.path)
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
@@ -80,7 +80,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
         with patch("twotone.tools.utils.start_process") as mock_start_process, TestDataWorkingDirectory() as td:
             mock_start_process.side_effect = start_process
-            add_test_media("Blue_Sky_and_Clouds_Timelapse.*(?:mov|srt)", td.path)
+            add_test_media(
+                "Blue_Sky_and_Clouds_Timelapse.*(?:mov|srt)", td.path)
 
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)

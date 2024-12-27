@@ -22,7 +22,8 @@ class TestDataWorkingDirectory:
         return self.directory
 
     def __enter__(self):
-        self.directory = os.path.join(tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
+        self.directory = os.path.join(
+            tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
         if os.path.exists(self.directory):
             shutil.rmtree(self.directory)
 
@@ -59,7 +60,7 @@ def add_test_media(filter: str, test_case_path: str, suffixes: [str] = [None]):
                         file_path = Path(file)
                         dst_file_name = file_path.stem + suffix + file_path.suffix
                         os.symlink(os.path.join(current_path, media, file_path),
-                                os.path.join(test_case_path, dst_file_name))
+                                   os.path.join(test_case_path, dst_file_name))
 
 
 def get_video(name: str) -> str:

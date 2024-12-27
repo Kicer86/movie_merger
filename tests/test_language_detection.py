@@ -62,7 +62,8 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             with open(os.path.join(td.path, "close-up-of-flowers_de.srt"), "w") as sf:
                 sf.write("00:00:00:Hallo Welt\n")
-                sf.write("00:00:06:Dies ist ein Beispiel für einen Untertitel auf Deutsch\n")
+                sf.write(
+                    "00:00:06:Dies ist ein Beispiel für einen Untertitel auf Deutsch\n")
 
             with open(os.path.join(td.path, "close-up-of-flowers_cz.srt"), "w") as sf:
                 sf.write("00:00:00:Ahoj světe\n")
@@ -70,9 +71,11 @@ class SimpleSubtitlesMerge(unittest.TestCase):
 
             with open(os.path.join(td.path, "close-up-of-flowers_fr.srt"), "w") as sf:
                 sf.write("00:00:00:Bonjour le monde\n")
-                sf.write("00:00:06:Ceci est un exemple de sous-titre en français\n")
+                sf.write(
+                    "00:00:06:Ceci est un exemple de sous-titre en français\n")
 
-            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto", "-p" "de,cs"])
+            twotone.execute(["--no-dry-run", "merge", td.path,
+                            "-l", "auto", "-p" "de,cs"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
