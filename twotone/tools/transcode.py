@@ -337,7 +337,7 @@ def setup_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--ssim", "-s",
                         type=valid_ssim_value,
                         default=0.98,
-                        help='Requested SSIM value (video quality). Valid values are between 0 and 1. Default is 0.98.')
+                        help='Requested SSIM value (video quality). Valid values are between 0 and 1.')
     parser.add_argument('videos_path',
                         nargs=1,
                         help='Path with videos to transcode.')
