@@ -14,6 +14,7 @@ TOOLS = {
 
 def execute(argv):
     parser = argparse.ArgumentParser(
+        prog = 'twotone',
         description='Videos manipulation toolkit. '
                     'By default all tools do nothing but showing what would be done. '
                     'Use --no-dry-run option to perform actual operation. '
