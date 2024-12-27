@@ -1,13 +1,14 @@
 
-import os
+import argparse
 import logging
+import os
 import random
 import re
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
-import utils
+from . import utils
 
 
 def find_video_files(directory):
@@ -305,6 +306,14 @@ def final_encode(input_file, crf, extra_params):
             f"Final CRF: {crf}, Final Encoding SSIM: {final_quality}, "
             f"Encoded file is larger than the original. Keeping the original file."
         )
+
+
+def setup_parser(parser: argparse.ArgumentParser):
+    pass
+
+
+def run(args):
+    pass
 
 
 def main(directory):
