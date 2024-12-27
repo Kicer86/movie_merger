@@ -2,7 +2,7 @@
 import unittest
 import logging
 
-import encode
+import twotone.tools.encode as encode
 from common import TestDataWorkingDirectory, get_video
 
 

@@ -2,8 +2,8 @@
 import os
 import unittest
 
-import twotone
-import utils
+import twotone.tools.utils as utils
+import twotone.twotone as twotone
 from common import TestDataWorkingDirectory, list_files, add_test_media
 
 
@@ -17,7 +17,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Hello World\n")
                 sf.write("00:00:06:This is some sample subtitle in english\n")
 
-            twotone.run([td.path, "-l", "auto", "--no-dry-run"])
+            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
@@ -37,7 +37,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Witaj Świecie\n")
                 sf.write("00:00:06:To jest przykładowy tekst po polsku\n")
 
-            twotone.run([td.path, "-l", "auto", "--no-dry-run"])
+            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
@@ -72,7 +72,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
                 sf.write("00:00:00:Bonjour le monde\n")
                 sf.write("00:00:06:Ceci est un exemple de sous-titre en français\n")
 
-            twotone.run([td.path, "-l", "auto", "-p" "de,cs", "--no-dry-run"])
+            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto", "-p" "de,cs"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)

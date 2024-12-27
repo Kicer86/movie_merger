@@ -12,7 +12,7 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 from collections import namedtuple
 from pathlib import Path
 
-import utils
+from . import utils
 
 
 work = True
@@ -261,20 +261,10 @@ class TwoTone(utils.InterruptibleProcess):
                 self._merge(video, subtitles)
 
 
-def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Combine many video/subtitle files into one mkv file. '
-                                                 'By default program does nothing but showing what will be done. '
-                                                 'Use --no-dry-run option to perform actual operation. '
-                                                 'Please mind that ALL source files, so consider making a backup. '
-                                                 'It is safe to stop this script with ctrl+c - it will quit '
-                                                 'gracefully in a while.')
+def setup_parser(parser: argparse.ArgumentParser):
     parser.add_argument('videos_path',
                         nargs=1,
                         help='Path with videos to combine.')
-    parser.add_argument("--no-dry-run", "-r",
-                        action='store_true',
-                        default=False,
-                        help='Perform actual operation.')
     parser.add_argument("--language", "-l",
                         help='Language code for found subtitles. By default none is used. See mkvmerge '
                              '--list-languages for available languages. For automatic detection use: auto')
@@ -284,13 +274,9 @@ def run(sys_args: [str]):
                              'found subtitles will be ordered so polish goes as first, then german, english and '
                              'french. If there are subtitles in any other language, they will be append at '
                              'the end in undefined order')
-    parser.add_argument("--verbose", action='store_true', default=False, help='Verbose output')
 
-    args = parser.parse_args(sys_args)
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-
+def run(args):
     for tool in ["mkvmerge", "ffmpeg", "ffprobe"]:
         path = shutil.which(tool)
         if path is None:
@@ -303,17 +289,3 @@ def run(sys_args: [str]):
                        language=args.language,
                        lang_priority=args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
-
-
-if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    try:
-        run(sys.argv[1:])
-    except RuntimeError as e:
-        logging.error(f"Unexpected error occurred: {e}. Terminating")
-        exit(1)
-
-    if work:
-        logging.info("Done")
-    else:
-        logging.warning("Quited due to SIGINT")

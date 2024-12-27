@@ -9,7 +9,7 @@ import tempfile
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-import utils
+from . import utils
 
 
 class Fixer(utils.InterruptibleProcess):
@@ -200,20 +200,13 @@ class Fixer(utils.InterruptibleProcess):
         self._repair_videos(broken_videos)
 
 
-def run(sys_args: [str]):
-    parser = argparse.ArgumentParser(description='Look for MKV movies with subtitles with invalid fps and try to fix them.')
-
-    parser.add_argument("--no-dry-run", "-r",
-                        action='store_true',
-                        default=False,
-                        help='Perform actual operation.')
+def setup_parser(parser: argparse.ArgumentParser):
     parser.add_argument('videos_path',
                         nargs=1,
                         help='Path with videos to analyze.')
-    parser.add_argument("--verbose", action='store_true', default=False, help='Verbose output')
 
-    args = parser.parse_args(sys_args)
 
+def run(args):
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
