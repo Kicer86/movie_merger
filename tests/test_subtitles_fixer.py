@@ -4,8 +4,8 @@ import os
 import unittest
 import tempfile
 
-import subtitles_fixer
-import utils
+import twotone.tools.utils as utils
+import twotone.twotone as twotone
 
 from common import TestDataWorkingDirectory, add_test_media, hashes, current_path, generate_microdvd_subtitles
 
@@ -78,7 +78,7 @@ class SubtitlesFixer(unittest.TestCase):
             create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
-            subtitles_fixer.run([td.path])
+            twotone.execute(["subtitles_fix", td.path])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
@@ -89,13 +89,13 @@ class SubtitlesFixer(unittest.TestCase):
             create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
-            subtitles_fixer.run(["-r", td.path])
+            twotone.execute(["-r", "subtitles_fix", td.path])
             hashes_after = hashes(td.path)
 
             self.assertNotEqual(hashes_before, hashes_after)
 
             # run again - there should be no changes
-            subtitles_fixer.run(["-r", td.path])
+            twotone.execute(["-r", "subtitles_fix", td.path])
             hashes_after_after = hashes(td.path)
             self.assertEqual(hashes_after, hashes_after_after)
 
@@ -105,13 +105,13 @@ class SubtitlesFixer(unittest.TestCase):
             create_broken_video_with_too_long_last_subtitle(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
-            subtitles_fixer.run(["-r", td.path])
+            twotone.execute(["-r", "subtitles_fix", td.path])
             hashes_after = hashes(td.path)
 
             self.assertNotEqual(hashes_before, hashes_after)
 
             # run again - there should be no changes
-            subtitles_fixer.run(["-r", td.path])
+            twotone.execute(["-r", "subtitles_fix", td.path])
             hashes_after_after = hashes(td.path)
             self.assertEqual(hashes_after, hashes_after_after)
 
@@ -121,7 +121,7 @@ class SubtitlesFixer(unittest.TestCase):
             create_broken_video_with_incompatible_subtitles(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
-            subtitles_fixer.run(["-r", td.path])
+            twotone.execute(["-r", "subtitles_fix", td.path])
             hashes_after = hashes(td.path)
 
             self.assertEqual(hashes_before, hashes_after)
