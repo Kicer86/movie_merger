@@ -53,11 +53,13 @@ def main(argv):
         print(f"Error: Unknown tool {args.tool}")
         sys.exit(1)
 
-
-if __name__ == '__main__':
+def default_main():
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     try:
         main(sys.argv[1:])
     except RuntimeError as e:
         logging.error(f"Unexpected error occurred: {e}. Terminating")
         exit(1)
+
+if __name__ == '__main__':
+    default_main()
