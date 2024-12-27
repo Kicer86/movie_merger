@@ -15,7 +15,7 @@ class SubtitlesConversion(unittest.TestCase):
             add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
             generate_microdvd_subtitles(os.path.join(td.path, "sea-waves.txt"), 25)
 
-            twotone.main(["--no-dry-run", "merge", td.path, "-l", "auto"])
+            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
@@ -49,7 +49,7 @@ class SubtitlesConversion(unittest.TestCase):
             add_test_media("moon_23.976.mp4", td.path)
             generate_microdvd_subtitles(os.path.join(td.path, "moon_23.976.txt"), length = 1, fps = utils.ffmpeg_default_fps)
 
-            twotone.main(["--no-dry-run", "merge", td.path, "-l", "auto"])
+            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)

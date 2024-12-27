@@ -10,7 +10,7 @@ TOOLS = {
 }
 
 
-def main(argv):
+def execute(argv):
     parser = argparse.ArgumentParser(
         description='Videos manipulation toolkit. '
                     'By default all tools do nothing but showing what would be done. '
@@ -53,13 +53,13 @@ def main(argv):
         print(f"Error: Unknown tool {args.tool}")
         sys.exit(1)
 
-def default_main():
+def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
     try:
-        main(sys.argv[1:])
+        execute(sys.argv[1:])
     except RuntimeError as e:
         logging.error(f"Unexpected error occurred: {e}. Terminating")
         exit(1)
 
 if __name__ == '__main__':
-    default_main()
+    main()

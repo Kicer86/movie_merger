@@ -1,5 +1,5 @@
 
-from .twotone import default_main
+from .twotone import main
 
 if __name__ == "__main__":
-    default_main()
+    main()
