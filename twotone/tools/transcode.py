@@ -54,7 +54,7 @@ class Transcoder(utils.InterruptibleProcess):
 
         return None
 
-    def _transcode_video(self, input_file, output_file, crf, preset, input_params=[], output_params=[]):
+    def _transcode_video(self, input_file, output_file, crf, preset, input_params=[], output_params=[], show_progress=False):
         """Encode video with a given CRF, preset, and extra parameters."""
         args = [
             "-v", "error", "-stats", "-nostdin",
@@ -69,7 +69,7 @@ class Transcoder(utils.InterruptibleProcess):
             output_file
         ]
 
-        result = utils.start_process("ffmpeg", args)
+        result = utils.start_process("ffmpeg", args, show_progress=show_progress)
         self._validate_ffmpeg_result(result)
 
     def _extract_segment(self, video_file, start_time, end_time, output_file):
@@ -231,8 +231,7 @@ class Transcoder(utils.InterruptibleProcess):
         logging.info(f"Starting final transcoding with CRF: {
                      crf} and extra params: {extra_params}")
         final_output_file = f"{basename}.temp.{ext}"
-        self._transcode_video(input_file, final_output_file,
-                              crf, "veryslow", extra_params)
+        self._transcode_video(input_file, final_output_file, crf, "veryslow", extra_params, show_progress=True)
 
         original_size = os.path.getsize(input_file)
         final_size = os.path.getsize(final_output_file)
