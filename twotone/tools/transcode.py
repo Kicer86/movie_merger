@@ -41,8 +41,7 @@ class Transcoder(utils.InterruptibleProcess):
         ]
 
         result = utils.start_process("ffmpeg", args)
-        ssim_line = [line for line in result.stderr.decode(
-            "utf-8").splitlines() if "All:" in line]
+        ssim_line = [line for line in result.stderr.splitlines() if "All:" in line]
 
         if ssim_line:
             # Extract the SSIM value immediately after "All:"
@@ -210,8 +209,7 @@ class Transcoder(utils.InterruptibleProcess):
         self._transcode_video(
             segment_file, transcoded_segment_output, crf, "veryfast")
 
-        quality = self._calculate_quality(
-            segment_file, transcoded_segment_output)
+        quality = self._calculate_quality(segment_file, transcoded_segment_output)
         return quality
 
     def _for_segments(self, segments, op, title, unit):
@@ -290,15 +288,13 @@ class Transcoder(utils.InterruptibleProcess):
                 qualities = []
 
                 def get_quality(wd_dir, segment_file):
-                    quality = self._transcode_segment_and_compare(
-                        wd_dir, segment_file, mid_crf)
+                    quality = self._transcode_segment_and_compare(wd_dir, segment_file, mid_crf)
                     if quality:
                         qualities.append(quality)
 
                 self._for_segments(segment_files, get_quality)
 
-                avg_quality = sum(qualities) / \
-                    len(qualities) if qualities else 0
+                avg_quality = sum(qualities) / len(qualities) if qualities else 0
                 logging.info(
                     f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
 
