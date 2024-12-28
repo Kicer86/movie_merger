@@ -263,6 +263,9 @@ class Transcoder(utils.InterruptibleProcess):
         if not duration:
             return None
 
+        # convert to seconds
+        duration /= 1000
+
         with tempfile.TemporaryDirectory() as wd_dir:
             segment_files = []
             if allow_segments and duration > 30:
