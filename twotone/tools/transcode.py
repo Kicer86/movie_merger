@@ -273,8 +273,8 @@ class Transcoder(utils.InterruptibleProcess):
                 segment_files = self._extract_segments(
                     input_file, segments, wd_dir)
 
-                logging.info(f"Starting CRF bisection for {
-                             input_file} with veryfast preset using {len(segment_files)} segments")
+                logging.info(f"Starting CRF bisection for {input_file} "
+                             f"with veryfast preset using {len(segment_files)} segments")
             else:
                 segment_files = [input_file]
                 logging.info(f"Starting CRF bisection for {
