@@ -292,7 +292,7 @@ class Transcoder(utils.InterruptibleProcess):
                     if quality:
                         qualities.append(quality)
 
-                self._for_segments(segment_files, get_quality)
+                self._for_segments(segment_files, get_quality, "SSIM calculation", "scene")
 
                 avg_quality = sum(qualities) / len(qualities) if qualities else 0
                 logging.info(
