@@ -29,6 +29,14 @@ subrip_time_pattern = re.compile(
 # constant taken from https://trac.ffmpeg.org/ticket/3287
 ffmpeg_default_fps = 23.976
 
+def get_tqdm_defaults():
+    return {
+    'leave': False,
+    'smoothing': 0.1,
+    'mininterval':.2,
+    'disable': hide_progressbar()
+}
+
 
 def start_process(process: str, args: [str]) -> ProcessResult:
     command = [process]
