@@ -1,47 +1,59 @@
+## Tools for Batch Video File Manipulations
 
-## Set of tools for batch video files manipulations
+### Overview
 
-### Running
+**TwoTone** is a versatile tool with various subtools for batch video file manipulations.
 
-TwoTone is a tool with various subtools for batch manipulations on video files.<br/>
+### Running TwoTone
 
-It is run as follows:
+To run TwoTone, use the following command:
 
 ```bash
-python -m twotone <global options> tool-name <tool specific options>
+python -m twotone <global options> <tool-name> <tool-specific options>
 ```
 
-To get up-to-date list of global options, check:
+### Getting Help
+
+To see a list of global options, available tools, and their descriptions:
 
 ```bash
 python -m twotone --help
 ```
 
-It will also provide list of available tools and their description.
-
-For tool specific options check:
+To get help for a specific tool:
 
 ```bash
-python -m twotone tool-name --help
+python -m twotone <tool-name> --help
 ```
-Please mind that all tools **do not modify** any files until run with global `-r` or `--no-dry-run` options. <br/>
 
-Before using any of given scripts backup your data as **source files are being deleted**.
+### Important Notes
 
-### Available tools
+Dry Run Mode: all tools run in a dry run mode by default (no files are being modified). Use the -r or --no-dry-run global option to perform actual operation.<br/>
+Data Safety: Always back up your data before using any tool, as source files may be deleted during processing.
 
-#### Merging video files with subtitles into mkv files 
+### Available Tools
+#### Merge Video Files with Subtitles into MKV Files
 
-twotone.py is a python script which searches for movie and subtitle files and merges them into one mkv file.<br/>
-By default subtitles are added without any language label but it can be changed with \-\-language option. <br/>
-See \-\-help for details.
+The twotone.py script searches for movie and subtitle files and merges them into a single MKV file.
 
+By default, subtitles are added without a language label. You can specify a language with the --language option.
 
-#### Automatic video reencoding
+For a full list of options:
 
-encode.py takes video dir as an input parameter and reencodes them with x265 coded.<br/>
-Script tries to find optimal crf for each video by comparing original video with encoded one and measuring quality.
-As of now it looks for crf giving SSIM ≈ 0.98 result. 
+```bash
+python -m twotone merge --help
+```
 
-Currently this is a very simple script. It has no 'dry run' mode no any other options. Just run it with the input dir.<br/>
-Please mind ctrl+c is not supported yet, so be careful when you stop its work.
+#### Automatic Video Re-encoding
+
+The encode.py script re-encodes videos using the x265 codec.
+
+    It takes a video directory as an input and determines the optimal CRF for each video by comparing the original and encoded versions.
+    The script aims to achieve a quality level where SSIM ≈ 0.98.
+
+Usage Notes:
+
+    This script currently has no dry run mode or additional options—simply provide the input directory.
+    Interruptions: The script does not support stopping with Ctrl+C, so use caution when interrupting it.
+
+Always refer to the help options for the latest details about usage and features.
