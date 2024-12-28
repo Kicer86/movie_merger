@@ -224,14 +224,13 @@ class Transcoder(utils.InterruptibleProcess):
             for segment in segments:
                 executor.submit(worker, segment)
 
-    def _final_transcode(self, input_file, crf, extra_params):
+    def _final_transcode(self, input_file, crf):
         """Perform the final transcoding with the best CRF using the determined extra_params."""
         _, basename, ext = utils.split_path(input_file)
 
-        logging.info(f"Starting final transcoding with CRF: {
-                     crf} and extra params: {extra_params}")
+        logging.info(f"Starting final transcoding with CRF: {crf}")
         final_output_file = f"{basename}.temp.{ext}"
-        self._transcode_video(input_file, final_output_file, crf, "veryslow", extra_params, show_progress=True)
+        self._transcode_video(input_file, final_output_file, crf, "veryslow", show_progress=True)
 
         original_size = os.path.getsize(input_file)
         final_size = os.path.getsize(final_output_file)
@@ -244,15 +243,15 @@ class Transcoder(utils.InterruptibleProcess):
             utils.start_process("exiftool", ["-overwrite_original", "-TagsFromFile", input_file, "-all:all>all:all", final_output_file])
             os.rename(final_output_file, input_file)
             logging.info(
-                f"Final CRF: {crf}, Final Encoding SSIM: {
-                    final_quality}, Encoded Size: {final_size} bytes, "
-                f"Size reduced by: {original_size - final_size} bytes "
+                f"Final CRF: {crf}, SSIM: {final_quality}, "
+                f"encoded Size: {final_size} bytes, "
+                f"size reduced by: {original_size - final_size} bytes "
                 f"({size_reduction:.2f}% of original size)"
             )
         else:
             os.remove(final_output_file)
             logging.warning(
-                f"Final CRF: {crf}, Final Encoding SSIM: {final_quality}, "
+                f"Final CRF: {crf}, SSIM: {final_quality}. "
                 f"Encoded file is larger than the original. Keeping the original file."
             )
 
@@ -330,7 +329,7 @@ class Transcoder(utils.InterruptibleProcess):
             best_crf = self.find_optimal_crf(file)
             if best_crf is not None and self.live_run:
                 # increase crf by one as veryslow preset will be used, so result should be above requested quality anyway
-                self._final_transcode(file, best_crf + 1, [])
+                self._final_transcode(file, best_crf + 1)
             logging.info(f"Finished processing {file}")
 
         logging.info("Video processing completed")
