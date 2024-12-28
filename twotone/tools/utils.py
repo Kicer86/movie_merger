@@ -186,7 +186,6 @@ def get_video_full_info(path: str) -> str:
                            process.stderr.decode('utf-8')}")
 
     output_lines = process.stdout
-    output_str = output_lines.decode('utf8')
     output_json = json.loads(output_lines)
 
     return output_json
