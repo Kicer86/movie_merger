@@ -123,7 +123,7 @@ class Transcoder(utils.InterruptibleProcess):
 
         # Parse timestamps from the ffmpeg output
         timestamps = []
-        showinfo_output = result.stderr.decode("utf-8")
+        showinfo_output = result.stderr
         for line in showinfo_output.splitlines():
             match = re.search(r"pts_time:(\d+(\.\d+)?)", line)
             if match:

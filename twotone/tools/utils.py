@@ -44,7 +44,7 @@ def start_process(process: str, args: [str]) -> ProcessResult:
 
     logging.debug(f"Starting {process} with options: {' '.join(args)}")
     sub_process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1)
     stdout, stderr = sub_process.communicate()
 
     logging.debug(f"Process finished with {sub_process.returncode}")
