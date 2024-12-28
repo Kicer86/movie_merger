@@ -214,10 +214,14 @@ class Transcoder(utils.InterruptibleProcess):
             segment_file, transcoded_segment_output)
         return quality
 
-    def _for_segments(self, segments, op):
-        with tempfile.TemporaryDirectory() as wd_dir, ThreadPoolExecutor() as executor:
+    def _for_segments(self, segments, op, title, unit):
+        with logging_redirect_tqdm(), \
+             tqdm(desc=title, unit=unit, total=len(segments), **utils.get_tqdm_defaults()) as pbar, \
+             tempfile.TemporaryDirectory() as wd_dir, \
+             ThreadPoolExecutor() as executor:
             def worker(file_path):
                 op(wd_dir, file_path)
+                pbar.update(1)
 
             for segment in segments:
                 executor.submit(worker, segment)
