@@ -330,6 +330,9 @@ class Transcoder(utils.InterruptibleProcess):
             if best_crf is not None and self.live_run:
                 # increase crf by one as veryslow preset will be used, so result should be above requested quality anyway
                 self._final_transcode(file, best_crf + 1)
+            elif not self.live_run:
+                logging.info(f"Dry run. Skipping final transcoding step.")
+
             logging.info(f"Finished processing {file}")
 
         logging.info("Video processing completed")
