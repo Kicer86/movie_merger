@@ -242,8 +242,7 @@ class Transcoder(utils.InterruptibleProcess):
         final_quality = self._calculate_quality(input_file, final_output_file)
 
         if final_size < original_size:
-            utils.start_process("exiftool", [
-                                "-overwrite_original", "-TagsFromFile", input_file, "-all:all>all:all", final_output_file])
+            utils.start_process("exiftool", ["-overwrite_original", "-TagsFromFile", input_file, "-all:all>all:all", final_output_file])
             os.rename(final_output_file, input_file)
             logging.info(
                 f"Final CRF: {crf}, Final Encoding SSIM: {
