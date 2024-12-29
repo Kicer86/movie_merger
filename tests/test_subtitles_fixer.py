@@ -47,8 +47,7 @@ def create_broken_video_with_too_long_last_subtitle(output_video_path: str, inpu
             file.write(f"1\n\n")
 
             file.write(f"2\n")
-            file.write(f"{utils.ms_to_time(1000)
-                          } --> {utils.ms_to_time((length + 10) * 1000)}\n")
+            file.write(f"{utils.ms_to_time(1000)} --> {utils.ms_to_time((length + 10) * 1000)}\n")
             file.write(f"2\n")
 
         utils.generate_mkv(input_video, output_video_path, [
@@ -82,8 +81,7 @@ class SubtitlesFixer(unittest.TestCase):
     def test_dry_run_is_respected(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{
-                                                             current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["subtitles_fix", td.path])
@@ -94,8 +92,7 @@ class SubtitlesFixer(unittest.TestCase):
     def test_video_with_scaled_subtitle_timings_fixing(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{
-                                                             current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["-r", "subtitles_fix", td.path])
@@ -111,8 +108,7 @@ class SubtitlesFixer(unittest.TestCase):
     def test_video_with_too_long_last_subtitle_fixing(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_too_long_last_subtitle(output_video_path, f"{
-                                                            current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_too_long_last_subtitle(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["-r", "subtitles_fix", td.path])
@@ -128,8 +124,7 @@ class SubtitlesFixer(unittest.TestCase):
     def test_deal_with_incompatible_videos(self):
         with TestDataWorkingDirectory() as td:
             output_video_path = f"{td.path}/test_video.mkv"
-            create_broken_video_with_incompatible_subtitles(output_video_path, f"{
-                                                            current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
+            create_broken_video_with_incompatible_subtitles(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
             hashes_before = hashes(td.path)
             twotone.execute(["-r", "subtitles_fix", td.path])

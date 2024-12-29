@@ -150,8 +150,7 @@ class TwoTone(utils.InterruptibleProcess):
                     utils.fix_subtitles_fps(input_file, output_file, fps)
 
             else:
-                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{
-                                   status.stderr.decode('utf-8')}")
+                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
 
             converted_subtitle = utils.SubtitleFile(
                 output_file, subtitle.language, "utf-8")
@@ -197,8 +196,7 @@ class TwoTone(utils.InterruptibleProcess):
 
         prepared_subtitles = []
         for subtitle in sorted_subtitles:
-            logging.debug(f"\tregister subtitle [{subtitle.language}]: {
-                          subtitle.path}")
+            logging.debug(f"\tregister subtitle [{subtitle.language}]: {subtitle.path}")
             self._register_input(subtitle.path)
 
             # Subtitles are buggy sometimes, use ffmpeg to fix them.
@@ -246,8 +244,7 @@ class TwoTone(utils.InterruptibleProcess):
             # this is a cumbersome situation so just don't allow it
             unique_names = set(Path(video).stem for video in video_files)
             if len(unique_names) != len(video_files):
-                logging.warning(f"Two video files with the same name found in {
-                                cd}. This is not supported, skipping whole directory.")
+                logging.warning(f"Two video files with the same name found in {cd}. This is not supported, skipping whole directory.")
                 continue
 
             subtitles_finder = self._aggressive_subtitle_search if len(

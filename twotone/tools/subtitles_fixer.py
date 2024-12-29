@@ -21,8 +21,7 @@ class Fixer(utils.InterruptibleProcess):
     def _print_broken_videos(broken_videos_info: [(utils.VideoInfo, [int])]):
         logging.info(f"Found {len(broken_videos_info)} broken videos:")
         for broken_video in broken_videos_info:
-            logging.info(f"{len(broken_video[1])} broken subtitle(s) in {
-                         broken_video[0].path} found")
+            logging.info(f"{len(broken_video[1])} broken subtitle(s) in {broken_video[0].path} found")
 
     def _no_resolver(self, video_track: utils.VideoTrack, content: str):
         logging.error("Cannot fix the file, no idea how to do it.")
@@ -38,8 +37,7 @@ class Fixer(utils.InterruptibleProcess):
         begin_pos = last_timestamp.start(1)
         end_pos = last_timestamp.end(2)
 
-        content = content[:begin_pos] + f"{utils.ms_to_time(time_from)} --> {
-            utils.ms_to_time(new_time_to)}" + content[end_pos:]
+        content = content[:begin_pos] + f"{utils.ms_to_time(time_from)} --> {utils.ms_to_time(new_time_to)}" + content[end_pos:]
         return content
 
     def _fps_scale_resolver(self, video_track: utils.VideoTrack, content: str):
@@ -125,17 +123,14 @@ class Fixer(utils.InterruptibleProcess):
                     if status:
                         if self._do_fix:
                             # remove all subtitles from video
-                            logging.debug(
-                                "Removing existing subtitles from file")
+                            logging.debug("Removing existing subtitles from file")
                             video_without_subtitles = video_file + ".nosubtitles.mkv"
-                            utils.start_process(
-                                "mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
+                            utils.start_process("mkvmerge", ["-o", video_without_subtitles, "-S", video_file])
 
                             # add fixed subtitles to video
                             logging.debug("Adding fixed subtitles to file")
                             temporaryVideoPath = video_file + ".fixed.mkv"
-                            utils.generate_mkv(
-                                input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
+                            utils.generate_mkv(input_video=video_without_subtitles, output_path=temporaryVideoPath, subtitles=subtitles)
 
                             # overwrite broken video with fixed one
                             os.replace(temporaryVideoPath, video_file)
@@ -158,8 +153,7 @@ class Fixer(utils.InterruptibleProcess):
         video_length = video_info.video_tracks[0].length
 
         if video_length is None:
-            logging.warning(
-                f"File {video_file} has unknown lenght. Cannot proceed.")
+            logging.warning(f"File {video_file} has unknown lenght. Cannot proceed.")
             return None
 
         broken_subtitiles = []
@@ -168,8 +162,7 @@ class Fixer(utils.InterruptibleProcess):
             subtitle = video_info.subtitles[i]
 
             if not subtitle.format == "subrip":
-                logging.warning(f"Cannot analyse subtitle #{i} of {
-                                video_file}: unsupported format '{subtitle.format}'")
+                logging.warning(f"Cannot analyse subtitle #{i} of {video_file}: unsupported format '{subtitle.format}'")
                 continue
 
             lenght = subtitle.length

@@ -293,8 +293,7 @@ class Transcoder(utils.InterruptibleProcess):
                              f"with veryfast preset using {len(segment_files)} segments")
             else:
                 segment_files = [input_file]
-                logging.info(f"Starting CRF bisection for {
-                             input_file} with veryfast preset using whole file")
+                logging.info(f"Starting CRF bisection for {input_file} with veryfast preset using whole file")
 
             def evaluate_crf(mid_crf):
                 self._check_for_stop()
@@ -315,28 +314,23 @@ class Transcoder(utils.InterruptibleProcess):
 
             top_quality = evaluate_crf(0)
             if top_quality < 0.9975:
-                raise RuntimeError(f"Sanity check failed: top SSIM value: {
-                                   top_quality} < 0.998")
+                raise RuntimeError(f"Sanity check failed: top SSIM value: {top_quality} < 0.998")
 
             if top_quality < self.target_ssim:
-                raise RuntimeError(f"Top SSIM value: {
-                                   top_quality} < requested SSIM: {self.target_ssim}")
+                raise RuntimeError(f"Top SSIM value: {top_quality} < requested SSIM: {self.target_ssim}")
 
             crf_min, crf_max = 0, 51
             best_crf, best_quality = self._bisection_search(
                 evaluate_crf, min_value=crf_min, max_value=crf_max, target_condition=lambda avg_quality: avg_quality >= self.target_ssim)
 
             if best_crf is not None and best_quality is not None:
-                logging.info(f"Finished CRF bisection. Optimal CRF: {
-                             best_crf} with quality: {best_quality}")
+                logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
             else:
-                logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({
-                                self.target_ssim}).")
+                logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({self.target_ssim}).")
             return best_crf
 
     def transcode(self, directory: str):
-        logging.info(f"Starting video transcoding with {
-                     self.codec}. Target SSIM: {self.target_ssim}")
+        logging.info(f"Starting video transcoding with {self.codec}. Target SSIM: {self.target_ssim}")
         video_files = self._find_video_files(directory)
 
         for file in video_files:
