@@ -55,8 +55,14 @@ class Transcoder(utils.InterruptibleProcess):
 
         return None
 
-    def _transcode_video(self, input_file, output_file, crf, preset, input_params=[], output_params=[], show_progress=False):
-        """Encode video with a given CRF, preset, and extra parameters."""
+    def _transcode_video(self, input_file, output_file, crf, preset, input_params=[], output_params=[], audio_codec=["-an"], show_progress=False):
+        """
+        Encode video with a given CRF, preset, and extra parameters.
+        By default audio is removed as in most cases this function is being used
+        for finding optimal CRF and quite often audio may alter SSIM results
+        (in most cases due to interfering with timestamps).
+        """
+
         args = [
             "-v", "error", "-stats", "-nostdin",
             *input_params,
@@ -65,7 +71,8 @@ class Transcoder(utils.InterruptibleProcess):
             "-crf", str(crf),
             "-preset", preset,
             "-profile:v", "main10",
-            "-c:a", "copy",
+            "-fps_mode", "vfr",
+            *audio_codec,
             *output_params,
             output_file
         ]
@@ -80,9 +87,7 @@ class Transcoder(utils.InterruptibleProcess):
             output_file,
             crf=0,
             preset="veryfast",
-            input_params=["-ss", str(start_time), "-to", str(end_time)],
-            # remove audio - some codecs may cause issues with proper extraction
-            output_params=["-an"]
+            input_params=["-ss", str(start_time), "-to", str(end_time)]
         )
 
     def _extract_segments(self, video_file: str, segments, output_dir: str):
@@ -231,7 +236,8 @@ class Transcoder(utils.InterruptibleProcess):
 
         logging.info(f"Starting final transcoding with CRF: {crf}")
         final_output_file = f"{basename}.temp.{ext}"
-        self._transcode_video(input_file, final_output_file, crf, "veryslow", show_progress=True)
+        self._transcode_video(input_file, final_output_file, crf, "veryslow",
+                              audio_codec=["-c:a", "copy"], show_progress=True)
 
         original_size = os.path.getsize(input_file)
         final_size = os.path.getsize(final_output_file)
@@ -279,6 +285,7 @@ class Transcoder(utils.InterruptibleProcess):
                 segments = self._select_scenes(input_file)
                 if len(segments) < 2:
                     segments = self._select_segments(input_file)
+
                 segment_files = self._extract_segments(
                     input_file, segments, wd_dir)
 
