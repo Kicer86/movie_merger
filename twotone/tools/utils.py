@@ -46,7 +46,7 @@ def start_process(process: str, args: [str], show_progress = False) -> ProcessRe
 
     logging.debug(f"Starting {process} with options: {' '.join(args)}")
     sub_process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1)
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1, preexec_fn=os.setsid)
 
     if show_progress:
         if process == "ffmpeg":
