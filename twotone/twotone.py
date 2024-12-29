@@ -49,7 +49,7 @@ def execute(argv):
 
     if args.tool is None:
         parser.print_help()
-        sys.exit(1)
+        return 1
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -63,15 +63,19 @@ def execute(argv):
                 tool(args)
             except RuntimeError as e:
                 logging.error(f"Unexpected error occurred: {e}. Terminating")
-                exit(1)
+                return 1
     else:
-        print(f"Error: Unknown tool {args.tool}")
-        sys.exit(1)
+        logging.error(f"Error: Unknown tool {args.tool}")
+        return 1
+
+    return 0
 
 
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    execute(sys.argv[1:])
+    status = execute(sys.argv[1:])
+    if status != 0:
+        sys.exit(status)
 
 
 if __name__ == '__main__':
