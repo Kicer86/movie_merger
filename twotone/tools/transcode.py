@@ -71,7 +71,6 @@ class Transcoder(utils.InterruptibleProcess):
             "-crf", str(crf),
             "-preset", preset,
             "-profile:v", "main10",
-            "-fps_mode", "vfr",
             *audio_codec,
             *output_params,
             output_file
