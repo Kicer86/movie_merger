@@ -27,6 +27,10 @@ def execute(argv):
     parser.add_argument("--verbose",
                         action="store_true",
                         help="Enable verbose output")
+    parser.add_argument("--crash-on-error",
+                        action="store_true",
+                        default=False,
+                        help=argparse.SUPPRESS)
     parser.add_argument("--no-dry-run", "-r",
                         action='store_true',
                         default=False,
@@ -51,7 +55,15 @@ def execute(argv):
         logging.getLogger().setLevel(logging.DEBUG)
 
     if args.tool in TOOLS:
-        TOOLS[args.tool][1](args)
+        tool = TOOLS[args.tool][1]
+        if args.crash_on_error:
+            tool(args)
+        else:
+            try:
+                tool(args)
+            except RuntimeError as e:
+                logging.error(f"Unexpected error occurred: {e}. Terminating")
+                exit(1)
     else:
         print(f"Error: Unknown tool {args.tool}")
         sys.exit(1)
@@ -59,11 +71,7 @@ def execute(argv):
 
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-    try:
-        execute(sys.argv[1:])
-    except RuntimeError as e:
-        logging.error(f"Unexpected error occurred: {e}. Terminating")
-        exit(1)
+    execute(sys.argv[1:])
 
 
 if __name__ == '__main__':
