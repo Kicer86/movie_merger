@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import shutil
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -241,7 +242,12 @@ class Transcoder(utils.InterruptibleProcess):
 
         if final_size < original_size:
             utils.start_process("exiftool", ["-overwrite_original", "-TagsFromFile", input_file, "-all:all>all:all", final_output_file])
-            os.rename(final_output_file, input_file)
+
+            try:
+                os.replace(final_output_file, input_file)
+            except OSError:
+                shutil.move(final_output_file, input_file)
+
             logging.info(
                 f"Final CRF: {crf}, SSIM: {final_quality}, "
                 f"encoded Size: {final_size} bytes, "
