@@ -26,8 +26,9 @@ jobs:
       run: |
         sudo apt-get update &&  \
         sudo apt-get install    \
-          mkvtoolnix            \
-          ffmpeg
+          exiftool              \
+          ffmpeg                \
+          mkvtoolnix
 
     - name: Run unit tests
       run: |
