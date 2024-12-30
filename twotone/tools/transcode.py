@@ -313,7 +313,7 @@ class Transcoder(utils.InterruptibleProcess):
 
             top_quality = evaluate_crf(0)
             if top_quality < 0.9975:
-                raise RuntimeError(f"Sanity check failed: top SSIM value: {top_quality} < 0.998")
+                raise RuntimeError(f"Sanity check failed: top SSIM value: {top_quality} < 0.9975")
 
             if top_quality < self.target_ssim:
                 raise RuntimeError(f"Top SSIM value: {top_quality} < requested SSIM: {self.target_ssim}")
