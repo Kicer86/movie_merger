@@ -3,12 +3,12 @@ import argparse
 import logging
 import sys
 
-from .tools import merge, subtitles_fixer, encode
+from .tools import merge, subtitles_fixer, transcode
 
 TOOLS = {
     "merge": (merge.setup_parser, merge.run, "Batch tool: merge video file with subtitles into one MKV file"),
     "subtitles_fix": (subtitles_fixer.setup_parser, subtitles_fixer.run, "Batch tool: fixes some specific issues with subtitles. Do not use until you are sure it will help for your problems."),
-    "encode": (encode.setup_parser, encode.run, "Batch tool: transcode videos preserving quality."),
+    "transcode": (transcode.setup_parser, transcode.run, "Batch tool: transcode videos from provided directory preserving quality."),
 }
 
 
@@ -51,9 +51,11 @@ def execute(argv):
         logging.getLogger().setLevel(logging.DEBUG)
 
     if args.tool in TOOLS:
-        TOOLS[args.tool][1](args)
+        tool = TOOLS[args.tool][1]
+        tool(args)
+
     else:
-        print(f"Error: Unknown tool {args.tool}")
+        logging.error(f"Error: Unknown tool {args.tool}")
         sys.exit(1)
 
 def main():
@@ -62,7 +64,6 @@ def main():
         execute(sys.argv[1:])
     except RuntimeError as e:
         logging.error(f"Unexpected error occurred: {e}. Terminating")
-        exit(1)
 
 if __name__ == '__main__':
     main()
