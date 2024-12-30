@@ -1,4 +1,5 @@
 
+import logging
 import os
 import unittest
 
@@ -13,6 +14,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._start_process = utils.start_process
+        logging.getLogger().setLevel(logging.CRITICAL)
 
 
     def test_no_changes_when_mkvmerge_exits_with_error(self):

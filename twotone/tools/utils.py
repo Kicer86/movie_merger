@@ -11,6 +11,8 @@ import sys
 from collections import namedtuple
 from itertools import islice
 from pathlib import Path
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 
 SubtitleFile = namedtuple("Subtitle", "path language encoding")
@@ -26,13 +28,44 @@ subrip_time_pattern = re.compile(r'(\d+:\d{2}:\d{2},\d{3}) --> (\d+:\d{2}:\d{2},
 
 ffmpeg_default_fps = 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
 
+def get_tqdm_defaults():
+    return {
+    'leave': False,
+    'smoothing': 0.1,
+    'mininterval':.2,
+    'disable': hide_progressbar()
+}
 
-def start_process(process: str, args: [str]) -> ProcessResult:
+
+def start_process(process: str, args: [str], show_progress = False) -> ProcessResult:
     command = [process]
     command.extend(args)
 
     logging.debug(f"Starting {process} with options: {' '.join(args)}")
-    sub_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    sub_process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1, preexec_fn=os.setsid)
+
+    if show_progress:
+        if process == "ffmpeg":
+            index_of_i = args.index("-i")
+            input_file = args[index_of_i + 1]
+
+            if is_video(input_file):
+                progress_pattern = re.compile(r"frame= *(\d+)")
+                frames = get_video_frames_count(input_file)
+                with logging_redirect_tqdm(), \
+                     tqdm(desc="Processing video", unit="frame", total=frames, **get_tqdm_defaults()) as pbar:
+                    last_frame = 0
+                    for line in sub_process.stderr:
+                        line = line.strip()
+                        if "frame=" in line:
+                            match = progress_pattern.search(line)
+                            if match:
+                                current_frame = int(match.group(1))
+                                delta = current_frame - last_frame
+                                pbar.update(delta)
+                                last_frame = current_frame
+
     stdout, stderr = sub_process.communicate()
 
     logging.debug(f"Process finished with {sub_process.returncode}")
@@ -146,6 +179,29 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
         content = alter_subrip_subtitles_times(content, multiplier)
         outfile.write(content)
 
+
+def get_video_duration(video_file):
+    """Get the duration of a video in seconds."""
+    result = start_process("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file])
+
+    try:
+        return int(float(result.stdout.strip())*1000)
+    except ValueError:
+        logging.error(f"Failed to get duration for {video_file}")
+        return None
+
+
+def get_video_frames_count(video_file: str):
+    result = start_process("ffprobe", ["-v", "error", "-select_streams", "v:0", "-count_packets",
+                           "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0", video_file])
+
+    try:
+        return int(result.stdout.strip())
+    except ValueError:
+        logging.error(f"Failed to get frame count for {video_file}")
+        return None
+
+
 def get_video_full_info(path: str) -> str:
     args = []
     args.extend(["-v", "quiet"])
@@ -160,7 +216,6 @@ def get_video_full_info(path: str) -> str:
         raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
 
     output_lines = process.stdout
-    output_str = output_lines.decode('utf8')
     output_json = json.loads(output_lines)
 
     return output_json
@@ -206,6 +261,8 @@ def get_video_data(path: str) -> [VideoInfo]:
         elif stream_type == "video":
             fps = stream["r_frame_rate"]
             length = get_length(stream)
+            if length is None:
+                length = get_video_duration(path)
 
             video_tracks.append(VideoTrack(fps=fps, length=length))
 
