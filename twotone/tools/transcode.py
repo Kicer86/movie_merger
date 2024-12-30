@@ -234,8 +234,7 @@ class Transcoder(utils.InterruptibleProcess):
 
         logging.info(f"Starting final transcoding with CRF: {crf}")
         final_output_file = f"{basename}.temp.{ext}"
-        self._transcode_video(input_file, final_output_file, crf, "veryslow",
-                              audio_codec=["-c:a", "copy"], show_progress=True)
+        self._transcode_video(input_file, final_output_file, crf, "veryslow", audio_codec=["-c:a", "copy"], output_params = ["-vsync", "passthrough"], show_progress=True)
 
         original_size = os.path.getsize(input_file)
         final_size = os.path.getsize(final_output_file)
