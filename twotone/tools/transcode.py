@@ -211,8 +211,7 @@ class Transcoder(utils.InterruptibleProcess):
         transcoded_segment_output = os.path.join(
             wd_dir, f"{filename}.transcoded.{ext}")
 
-        self._transcode_video(
-            segment_file, transcoded_segment_output, crf, "veryfast")
+        self._transcode_video(segment_file, transcoded_segment_output, crf, "veryfast", output_params = ["-vsync", "vfr"])
 
         quality = self._calculate_quality(segment_file, transcoded_segment_output)
         return quality
