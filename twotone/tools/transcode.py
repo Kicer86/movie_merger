@@ -244,7 +244,22 @@ class Transcoder(utils.InterruptibleProcess):
         # Measure SSIM again after final transcoding
         final_quality = self._calculate_quality(input_file, final_output_file)
 
-        if final_size < original_size:
+        try:
+            if final_quality < self.target_ssim:
+                logging.warning(
+                    f"Final CRF: {crf}, SSIM: {final_quality}. "
+                    f"Final transcode resulted in lower SSIM than requested: {final_quality} < {self.target_ssim}"
+                )
+                raise ValueError()
+
+            if final_size > original_size:
+                logging.warning(
+                    f"Final CRF: {crf}, SSIM: {final_quality}. "
+                    f"Encoded file is larger than the original. Keeping the original file."
+                )
+                raise ValueError()
+
+
             utils.start_process("exiftool", ["-overwrite_original", "-TagsFromFile", input_file, "-all:all>all:all", final_output_file])
 
             try:
@@ -258,12 +273,10 @@ class Transcoder(utils.InterruptibleProcess):
                 f"size reduced by: {original_size - final_size} bytes "
                 f"({size_reduction:.2f}% of original size)"
             )
-        else:
+
+        except ValueError:
             os.remove(final_output_file)
-            logging.warning(
-                f"Final CRF: {crf}, SSIM: {final_quality}. "
-                f"Encoded file is larger than the original. Keeping the original file."
-            )
+
 
     def find_optimal_crf(self, input_file, allow_segments=True):
         """Find the optimal CRF using bisection."""
