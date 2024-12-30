@@ -53,7 +53,10 @@ class TranscoderTests(unittest.TestCase):
                 self.assertTrue(False)
 
             hashes_after = hashes(td.path)
-            self.assertNotEqual(hashes_after, hashes_before)
+            self.assertEqual(len(hashes_after), 4)
+
+            for a, b in zip(hashes_after, hashes_before):
+                self.assertNotEqual(a, b)
 
 
 if __name__ == '__main__':
