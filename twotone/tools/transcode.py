@@ -13,13 +13,13 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 from . import utils
 
-
 class Transcoder(utils.InterruptibleProcess):
     def __init__(self, live_run: bool = False, target_ssim: float = 0.98, codec: str = "libx265"):
         super().__init__()
         self.live_run = live_run
         self.target_ssim = target_ssim
         self.codec = codec
+
 
     def _find_video_files(self, directory):
         """Find video files with specified extensions."""
@@ -30,9 +30,11 @@ class Transcoder(utils.InterruptibleProcess):
                     video_files.append(os.path.join(root, file))
         return video_files
 
+
     def _validate_ffmpeg_result(self, result: utils.ProcessResult):
         if result.returncode != 0:
             raise RuntimeError(result.stderr)
+
 
     def _calculate_quality(self, original, transcoded):
         """Calculate SSIM between original and transcoded video."""
@@ -54,6 +56,7 @@ class Transcoder(utils.InterruptibleProcess):
                 return None
 
         return None
+
 
     def _transcode_video(self, input_file, output_file, crf, preset, input_params=[], output_params=[], audio_codec=["-an"], show_progress=False):
         """
@@ -79,6 +82,7 @@ class Transcoder(utils.InterruptibleProcess):
         result = utils.start_process("ffmpeg", args, show_progress=show_progress)
         self._validate_ffmpeg_result(result)
 
+
     def _extract_segment(self, video_file, start_time, end_time, output_file):
         """ Extract video segment. Video is transcoded with lossless quality to rebuild damaged or troublesome videos """
         self._transcode_video(
@@ -89,6 +93,7 @@ class Transcoder(utils.InterruptibleProcess):
             input_params=["-ss", str(start_time), "-to", str(end_time)]
         )
 
+
     def _extract_segments(self, video_file: str, segments, output_dir: str):
         output_files = []
         _, filename, ext = utils.split_path(video_file)
@@ -97,13 +102,13 @@ class Transcoder(utils.InterruptibleProcess):
         with logging_redirect_tqdm():
             for (start, end) in tqdm(segments, desc="Extracting scenes", unit="scene", leave=False, smoothing=0.1, mininterval=.2, disable=utils.hide_progressbar()):
                 self._check_for_stop()
-                output_file = os.path.join(
-                    output_dir, f"{filename}.frag{i}.{ext}")
+                output_file = os.path.join(output_dir, f"{filename}.frag{i}.{ext}")
                 self._extract_segment(video_file, start, end, output_file)
                 output_files.append(output_file)
                 i += 1
 
         return output_files
+
 
     def _select_scenes(self, video_file, segment_duration=5):
         """
@@ -144,35 +149,31 @@ class Transcoder(utils.InterruptibleProcess):
         # # Merge overlapping segments
         merged_segments = []
         for start, end in sorted(segments):
-            # No overlap
-            if not merged_segments or start > merged_segments[-1][1]:
+            if not merged_segments or start > merged_segments[-1][1]:  # No overlap
                 merged_segments.append((start, end))
             else:  # Overlap detected, merge
-                merged_segments[-1] = (merged_segments[-1]
-                                       [0], max(merged_segments[-1][1], end))
+                merged_segments[-1] = (merged_segments[-1][0], max(merged_segments[-1][1], end))
 
         return merged_segments
+
 
     def _select_segments(self, video_file, segment_duration=5):
         duration = utils.get_video_duration(video_file) / 1000
         num_segments = max(3, min(10, int(duration // 30)))
 
         if duration <= 0 or num_segments <= 0 or segment_duration <= 0:
-            raise ValueError(
-                "Total length, number of segments, and segment length must all be positive.")
+            raise ValueError("Total length, number of segments, and segment length must all be positive.")
         if segment_duration > duration:
             raise ValueError("Segment length cannot exceed total length.")
         if num_segments * segment_duration > duration:
-            raise ValueError(
-                "Total segments cannot fit within the total length.")
+            raise ValueError("Total segments cannot fit within the total length.")
 
-        step = (duration - segment_duration) / \
-            (num_segments - 1) if num_segments > 1 else 0
+        step = (duration - segment_duration) / (num_segments - 1) if num_segments > 1 else 0
 
-        segments = [(round(i * step), round(i * step) + segment_duration)
-                    for i in range(num_segments)]
+        segments = [(round(i * step), round(i * step) + segment_duration) for i in range(num_segments)]
 
         return segments
+
 
     def _bisection_search(self, eval_func, min_value, max_value, target_condition):
         """
@@ -205,11 +206,11 @@ class Transcoder(utils.InterruptibleProcess):
 
         return best_value, best_result
 
+
     def _transcode_segment_and_compare(self, wd_dir: str, segment_file: str, crf: int) -> float or None:
         _, filename, ext = utils.split_path(segment_file)
 
-        transcoded_segment_output = os.path.join(
-            wd_dir, f"{filename}.transcoded.{ext}")
+        transcoded_segment_output = os.path.join(wd_dir, f"{filename}.transcoded.{ext}")
 
         self._transcode_video(segment_file, transcoded_segment_output, crf, "veryfast", output_params = ["-vsync", "vfr"])
 
@@ -277,6 +278,7 @@ class Transcoder(utils.InterruptibleProcess):
             os.remove(final_output_file)
 
 
+
     def find_optimal_crf(self, input_file, allow_segments=True):
         """Find the optimal CRF using bisection."""
         original_size = os.path.getsize(input_file)
@@ -317,8 +319,7 @@ class Transcoder(utils.InterruptibleProcess):
                 self._for_segments(segment_files, get_quality, "SSIM calculation", "scene")
 
                 avg_quality = sum(qualities) / len(qualities) if qualities else 0
-                logging.info(
-                    f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
+                logging.info(f"CRF: {mid_crf}, Average Quality (SSIM): {avg_quality}")
 
                 return avg_quality
 
@@ -330,14 +331,14 @@ class Transcoder(utils.InterruptibleProcess):
                 raise RuntimeError(f"Top SSIM value: {top_quality} < requested SSIM: {self.target_ssim}")
 
             crf_min, crf_max = 0, 51
-            best_crf, best_quality = self._bisection_search(
-                evaluate_crf, min_value=crf_min, max_value=crf_max, target_condition=lambda avg_quality: avg_quality >= self.target_ssim)
+            best_crf, best_quality = self._bisection_search(evaluate_crf, min_value = crf_min, max_value = crf_max, target_condition=lambda avg_quality: avg_quality >= self.target_ssim)
 
             if best_crf is not None and best_quality is not None:
                 logging.info(f"Finished CRF bisection. Optimal CRF: {best_crf} with quality: {best_quality}")
             else:
                 logging.warning(f"Finished CRF bisection. Could not find CRF matching desired quality ({self.target_ssim}).")
             return best_crf
+
 
     def transcode(self, directory: str):
         logging.info(f"Starting video transcoding with {self.codec}. Target SSIM: {self.target_ssim}")
@@ -365,8 +366,7 @@ def setup_parser(parser: argparse.ArgumentParser):
             if 0 <= fvalue <= 1:
                 return fvalue
             else:
-                raise argparse.ArgumentTypeError(
-                    f"SSIM value must be between 0 and 1. Got {value}")
+                raise argparse.ArgumentTypeError(f"SSIM value must be between 0 and 1. Got {value}")
         except ValueError:
             raise argparse.ArgumentTypeError(f"Invalid SSIM value: {value}")
 
@@ -383,5 +383,5 @@ def run(args):
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    transcoder = Transcoder(live_run=args.no_dry_run, target_ssim=args.ssim)
+    transcoder = Transcoder(live_run = args.no_dry_run, target_ssim = args.ssim)
     transcoder.transcode(args.videos_path[0])

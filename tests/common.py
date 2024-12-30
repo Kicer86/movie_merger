@@ -22,8 +22,7 @@ class TestDataWorkingDirectory:
         return self.directory
 
     def __enter__(self):
-        self.directory = os.path.join(
-            tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
+        self.directory = os.path.join(tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
         if os.path.exists(self.directory):
             shutil.rmtree(self.directory)
 

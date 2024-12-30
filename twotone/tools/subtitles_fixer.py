@@ -81,14 +81,13 @@ class Fixer(utils.InterruptibleProcess):
                 file.write(new_content)
             return True
 
-    def _extract_all_subtitles(self, video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
+    def _extract_all_subtitles(self,video_file: str, subtitles: [utils.Subtitle], wd: str) -> [utils.SubtitleFile]:
         result = []
         options = ["tracks", video_file]
 
         for subtitle in subtitles:
             outputfile = f"{wd}/{subtitle.tid}.srt"
-            subtitleFile = utils.SubtitleFile(
-                path=outputfile, language=subtitle.language, encoding="utf8")
+            subtitleFile = utils.SubtitleFile(path=outputfile, language=subtitle.language, encoding="utf8")
 
             result.append(subtitleFile)
             options.append(f"{subtitle.tid}:{outputfile}")
@@ -112,13 +111,10 @@ class Fixer(utils.InterruptibleProcess):
                     video_file = video_info.path
                     logging.info(f"Fixing subtitles in file {video_file}")
                     logging.debug("Extracting subtitles from file")
-                    subtitles = self._extract_all_subtitles(
-                        video_file, video_info.subtitles, wd_dir)
-                    broken_subtitles_paths = [subtitles[i]
-                                              for i in broken_subtitiles]
+                    subtitles = self._extract_all_subtitles(video_file, video_info.subtitles, wd_dir)
+                    broken_subtitles_paths = [subtitles[i] for i in broken_subtitiles]
 
-                    status = all(self._fix_subtitle(broken_subtitile.path, video_info)
-                                 for broken_subtitile in broken_subtitles_paths)
+                    status = all(self._fix_subtitle(broken_subtitile.path, video_info) for broken_subtitile in broken_subtitles_paths)
 
                     if status:
                         if self._do_fix:
@@ -142,8 +138,7 @@ class Fixer(utils.InterruptibleProcess):
                     else:
                         logging.debug("Skipping video due to errors")
 
-    # -> (utils.VideoInfo, [int]) | None:    // FIXME
-    def _check_if_broken(self, video_file: str):
+    def _check_if_broken(self, video_file: str): # -> (utils.VideoInfo, [int]) | None:    // FIXME
         logging.debug(f"Processing file {video_file}")
 
         def diff(a, b):
@@ -166,8 +161,7 @@ class Fixer(utils.InterruptibleProcess):
                 continue
 
             lenght = subtitle.length
-            # use 0.1% error margin as for some reason valid subtitles may appear longer than video
-            if lenght is not None and lenght > video_length * 1.001:
+            if lenght is not None and lenght > video_length * 1.001:                 # use 0.1% error margin as for some reason valid subtitles may appear longer than video
                 broken_subtitiles.append(i)
 
         if len(broken_subtitiles) == 0:
@@ -182,7 +176,7 @@ class Fixer(utils.InterruptibleProcess):
         video_files = []
 
         logging.debug(f"Finding videos in {path}")
-        for cd, _, files in os.walk(path, followlinks=True):
+        for cd, _, files in os.walk(path, followlinks = True):
             for file in files:
                 self._check_for_stop()
                 file_path = os.path.join(cd, file)

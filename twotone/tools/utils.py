@@ -22,14 +22,11 @@ VideoInfo = namedtuple("VideoInfo", "video_tracks subtitles path")
 ProcessResult = namedtuple("ProcessResult", "returncode stdout stderr")
 
 subtitle_format1 = re.compile("[0-9]{2}:[0-9]{2}:[0-9]{2}:.*")
-subtitle_format2 = re.compile(
-    "(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags=re.MULTILINE)
+subtitle_format2 = re.compile("(?:0|1)\n[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}\n", flags = re.MULTILINE)
 microdvd_time_pattern = re.compile("\\{[0-9]+\\}\\{[0-9]+\\}.*")
-subrip_time_pattern = re.compile(
-    r'(\d+:\d{2}:\d{2},\d{3}) --> (\d+:\d{2}:\d{2},\d{3})')
+subrip_time_pattern = re.compile(r'(\d+:\d{2}:\d{2},\d{3}) --> (\d+:\d{2}:\d{2},\d{3})')
 
-# constant taken from https://trac.ffmpeg.org/ticket/3287
-ffmpeg_default_fps = 23.976
+ffmpeg_default_fps = 23.976                      # constant taken from https://trac.ffmpeg.org/ticket/3287
 
 def get_tqdm_defaults():
     return {
@@ -106,7 +103,7 @@ def is_subtitle(file: str) -> bool:
         if encoding:
             logging.debug(f"\tOpening file with encoding {encoding}")
 
-            with open(file, 'r', encoding=encoding) as text_file:
+            with open(file, 'r', encoding = encoding) as text_file:
                 head = "".join(islice(text_file, 5)).strip()
 
                 for subtitle_format in [subtitle_format1, microdvd_time_pattern, subtitle_format2]:
@@ -119,7 +116,7 @@ def is_subtitle(file: str) -> bool:
 
 
 def is_subtitle_microdvd(subtitle: Subtitle) -> bool:
-    with open(subtitle.path, 'r', encoding=subtitle.encoding) as text_file:
+    with open(subtitle.path, 'r', encoding = subtitle.encoding) as text_file:
         head = "".join(islice(text_file, 5)).strip()
 
         if microdvd_time_pattern.match(head):
@@ -174,7 +171,7 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
     # and rewrite file as we need a copy in output_path anyway.
     # A simple file copying would do the job, but I just want to use the same
     # mechanism in all scenarios
-    if math.isclose(multiplier, 1, rel_tol=0.001):
+    if math.isclose(multiplier, 1, rel_tol = 0.001):
         multiplier = 1
 
     with open(input_path, 'r', encoding='utf-8') as infile, open(output_path, 'w', encoding='utf-8') as outfile:
@@ -185,8 +182,7 @@ def fix_subtitles_fps(input_path: str, output_path: str, subtitles_fps: float):
 
 def get_video_duration(video_file):
     """Get the duration of a video in seconds."""
-    result = start_process("ffprobe", ["-v", "error", "-show_entries",
-                           "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file])
+    result = start_process("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_file])
 
     try:
         return int(float(result.stdout.strip())*1000)
@@ -261,8 +257,7 @@ def get_video_data(path: str) -> [VideoInfo]:
             tid = stream["index"]
             format = stream["codec_name"]
 
-            subtitles.append(Subtitle(language, default=is_default,
-                             length=length, tid=tid, format=format))
+            subtitles.append(Subtitle(language, default=is_default, length=length, tid=tid, format=format))
         elif stream_type == "video":
             fps = stream["r_frame_rate"]
             length = get_length(stream)

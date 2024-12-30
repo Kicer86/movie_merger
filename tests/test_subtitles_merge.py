@@ -50,8 +50,7 @@ class SubtitlesMerge(unittest.TestCase):
             add_test_media(get_default_media_set_regex(), td.path)
 
             hashes_before = hashes(td.path)
-            # 13 videos and 13 subtitles expected
-            self.assertEqual(len(hashes_before), 2 * 13)
+            self.assertEqual(len(hashes_before), 2 * 13)        # 13 videos and 13 subtitles expected
             twotone.execute(["merge", td.path])
             hashes_after = hashes(td.path)
 
@@ -73,14 +72,12 @@ class SubtitlesMerge(unittest.TestCase):
             add_test_media(get_default_media_set_regex(), td.path)
 
             files_before = list_files(td.path)
-            # 13 videos and 13 subtitles expected
-            self.assertEqual(len(files_before), 2 * 13)
+            self.assertEqual(len(files_before), 2 * 13)         # 13 videos and 13 subtitles expected
 
             twotone.execute(["--no-dry-run", "merge", td.path])
 
             files_after = list_files(td.path)
-            # 13 mkv videos expected
-            self.assertEqual(len(files_after), 1 * 13)
+            self.assertEqual(len(files_after), 1 * 13)          # 13 mkv videos expected
 
             for video in files_after:
                 self.assertEqual(video[-4:], ".mkv")
@@ -169,8 +166,7 @@ class SubtitlesMerge(unittest.TestCase):
     def test_multilevel_structure(self):
         with TestDataWorkingDirectory() as td:
             add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
-            add_test_media(
-                "sea-waves-crashing-on-beach-shore.*srt", td.path, ["PL", "EN"])
+            add_test_media("sea-waves-crashing-on-beach-shore.*srt", td.path, ["PL", "EN"])
 
             subdir = os.path.join(td.path, "subdir")
             os.mkdir(subdir)
@@ -192,14 +188,12 @@ class SubtitlesMerge(unittest.TestCase):
     def test_subtitles_in_subdirectory(self):
         with TestDataWorkingDirectory() as td:
             add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
-            add_test_media(
-                "sea-waves-crashing-on-beach-shore.*srt", td.path, ["PL", "EN"])
+            add_test_media("sea-waves-crashing-on-beach-shore.*srt", td.path, ["PL", "EN"])
 
             subdir = os.path.join(td.path, "subdir")
             os.mkdir(subdir)
 
-            add_test_media(
-                "sea-waves-crashing-on-beach-shore.*srt", subdir, ["DE", "CS"])
+            add_test_media("sea-waves-crashing-on-beach-shore.*srt", subdir, ["DE", "CS"])
 
             twotone.execute(["--no-dry-run", "merge", td.path])
 
