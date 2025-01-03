@@ -3,6 +3,7 @@ import argparse
 import logging
 import requests
 
+from collections import defaultdict
 from typing import Dict, List
 
 from . import utils
@@ -30,6 +31,8 @@ class JellyfinSource(DuplicatesSource):
             "X-Emby-Token": self.token
         }
 
+        items_by_id = defaultdict(lambda: defaultdict(list))
+
         def fetchItems(params: Dict[str, str] = {}):
             params.update({"fields": "Path,ProviderIds"})
 
@@ -48,11 +51,22 @@ class JellyfinSource(DuplicatesSource):
                 if type == "Folder":
                     fetchItems(params={"parentId": id})
                 elif type == "Movie":
-                    print(name)
-                    print(item["ProviderIds"])
-                    print(item["Path"])
+                    providers = item["ProviderIds"]
+                    path = item["Path"]
+
+                    for name, id in providers.items():
+                        items_by_id[name][id].append(path)
 
         fetchItems()
+        duplicates = []
+
+        for ids in items_by_id.values():
+            for paths in ids.values():
+                if len(paths) > 1:
+                    duplicates.append(paths)
+
+        return duplicates
+
 
 class Melter():
     def __init__(self, interruption: utils.InterruptibleProcess, duplicates_source: DuplicatesSource):
