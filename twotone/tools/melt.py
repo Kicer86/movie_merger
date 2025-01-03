@@ -31,7 +31,7 @@ class JellyfinSource(DuplicatesSource):
             "X-Emby-Token": self.token
         }
 
-        items_by_id = defaultdict(lambda: defaultdict(list))
+        paths_by_id = defaultdict(lambda: defaultdict(list))
 
         def fetchItems(params: Dict[str, str] = {}):
             self.interruption._check_for_stop()
@@ -56,12 +56,12 @@ class JellyfinSource(DuplicatesSource):
                     path = item["Path"]
 
                     for name, id in providers.items():
-                        items_by_id[name][id].append(path)
+                        paths_by_id[name][id].append(path)
 
         fetchItems()
-        duplicates = []
+        duplicates = {}
 
-        for ids in items_by_id.values():
+        for ids in paths_by_id.values():
             for paths in ids.values():
                 if len(paths) > 1:
                     duplicates.append(paths)
