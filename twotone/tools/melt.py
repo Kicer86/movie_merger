@@ -1,5 +1,6 @@
 
 import argparse
+import json
 import logging
 import requests
 
@@ -55,16 +56,25 @@ class JellyfinSource(DuplicatesSource):
                     providers = item["ProviderIds"]
                     path = item["Path"]
 
-                    for name, id in providers.items():
-                        paths_by_id[name][id].append(path)
+                    for provider, id in providers.items():
+                        paths_by_id[provider][id].append((name, path))
 
         fetchItems()
         duplicates = {}
 
         for ids in paths_by_id.values():
-            for paths in ids.values():
-                if len(paths) > 1:
-                    duplicates.append(paths)
+            for data in ids.values():
+                if len(data) > 1:
+                    names, paths = zip(*data)
+
+                    # all names should be the same
+                    same = all(x == names[0] for x in names)
+
+                    if not same:
+                        logging.warning(f"Different names for the same movie: {names}. Files: {paths}")
+
+                    name = names[0]
+                    duplicates[name] = paths
 
         return duplicates
 
@@ -76,6 +86,7 @@ class Melter():
 
     def melt(self):
         duplicates = self.duplicates_source.collect_duplicates()
+        print(json.dumps(duplicates, indent=4))
 
 
 class RequireJellyfinServer(argparse.Action):
