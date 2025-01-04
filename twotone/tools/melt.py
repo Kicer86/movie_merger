@@ -111,9 +111,15 @@ class Melter():
         self.interruption = interruption
         self.duplicates_source = duplicates_source
 
+
+    def _process_duplicates(self, duplicates: Dict[str, List[str]]):
+        pass
+
+
     def melt(self):
         logging.info("Finding duplicates")
         duplicates = self.duplicates_source.collect_duplicates()
+        self._process_duplicates(duplicates)
         print(json.dumps(duplicates, indent=4))
 
 
