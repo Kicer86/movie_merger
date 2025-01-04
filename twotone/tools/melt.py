@@ -57,13 +57,16 @@ class JellyfinSource(DuplicatesSource):
                     path = item["Path"]
 
                     for provider, id in providers.items():
-                        paths_by_id[provider][id].append((name, path))
+                        # ignore collection ID
+                        if provider != "TmdbCollection":
+                            paths_by_id[provider][id].append((name, path))
 
         fetchItems()
         duplicates = {}
+        warnings = False
 
-        for ids in paths_by_id.values():
-            for data in ids.values():
+        for provider, ids in paths_by_id.items():
+            for id, data in ids.items():
                 if len(data) > 1:
                     names, paths = zip(*data)
 
@@ -71,10 +74,14 @@ class JellyfinSource(DuplicatesSource):
                     same = all(x == names[0] for x in names)
 
                     if not same:
-                        logging.warning(f"Different names for the same movie: {names}. Files: {paths}")
+                        logging.warning(f"Different names for the same movie ({provider}: {id}):\n{'\n'.join(names)}.\nJellyfin files:\n{'\n'.join(paths)}")
+                        warnings = True
 
                     name = names[0]
                     duplicates[name] = paths
+
+        if warnings:
+            raise RuntimeError("Warnings above need to be fixed before continuing")
 
         return duplicates
 
