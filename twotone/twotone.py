@@ -13,6 +13,10 @@ TOOLS = {
 }
 
 
+class CustomFormatter(argparse.HelpFormatter):
+    def _split_lines(self, text, width):
+        return text.splitlines()
+
 def execute(argv):
     parser = argparse.ArgumentParser(
         prog = 'twotone',
@@ -22,7 +26,7 @@ def execute(argv):
                     'Please mind that ALL source files will be modified, so consider making a backup. '
                     'It is safe to stop any tool with ctrl+c - it will quit '
                     'gracefully in a while.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=CustomFormatter
     )
 
     parser.add_argument("--verbose",
@@ -38,7 +42,7 @@ def execute(argv):
         tool_parser = subparsers.add_parser(
             tool_name,
             help=desc,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            formatter_class=CustomFormatter
         )
         setup_parser(tool_parser)
 
