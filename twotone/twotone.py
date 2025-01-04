@@ -64,7 +64,7 @@ def main():
     try:
         execute(sys.argv[1:])
     except RuntimeError as e:
-        logging.error(f"Unexpected error occurred: {e}. Terminating")
+        logging.error(f"Error occurred: {e}. Terminating")
 
 if __name__ == '__main__':
     main()
