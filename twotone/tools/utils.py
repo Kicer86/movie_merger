@@ -12,6 +12,7 @@ import uuid
 from collections import namedtuple
 from itertools import islice
 from pathlib import Path
+from typing import List
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -361,6 +362,19 @@ class InterruptibleProcess:
         if not self._work:
             logging.warning("Exiting now due to received signal.")
             sys.exit(1)
+
+
+def collect_video_files(path: str, interruptible: InterruptibleProcess) -> List[str]:
+    video_files = []
+    for cd, _, files in os.walk(path, followlinks = True):
+        for file in files:
+            interruptible._check_for_stop()
+            file_path = os.path.join(cd, file)
+
+            if is_video(file_path):
+                video_files.append(file_path)
+
+    return video_files
 
 
 def get_unique_file_name(directory: str, extension: str) -> str:
