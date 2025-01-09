@@ -144,7 +144,7 @@ class TwoTone(utils.InterruptibleProcess):
                     utils.fix_subtitles_fps(input_file, output_file, fps)
 
             else:
-                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr.decode('utf-8')}")
+                raise RuntimeError(f"ffmpeg exited with unexpected error:\n{status.stderr}")
 
             converted_subtitle = utils.SubtitleFile(output_file, subtitle.language, "utf-8")
 

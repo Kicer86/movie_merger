@@ -213,7 +213,7 @@ def get_video_full_info(path: str) -> str:
     process = start_process("ffprobe", args)
 
     if process.returncode != 0:
-        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr.decode('utf-8')}")
+        raise RuntimeError(f"ffprobe exited with unexpected error:\n{process.stderr}")
 
     output_lines = process.stdout
     output_json = json.loads(output_lines)
@@ -304,7 +304,7 @@ def generate_mkv(input_video: str, output_path: str, subtitles: [SubtitleFile]):
     if result.returncode != 0:
         if os.path.exists(output_path):
             os.remove(output_path)
-        raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr.decode('utf-8')}")
+        raise RuntimeError(f"{cmd} exited with unexpected error:\n{result.stderr}")
 
     if not os.path.exists(output_path):
         logging.error("Output file was not created")
