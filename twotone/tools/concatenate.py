@@ -1,6 +1,7 @@
 
 import argparse
 import logging
+import os
 import re
 from collections import defaultdict
 
@@ -19,7 +20,13 @@ class Concatenate(utils.InterruptibleProcess):
 
         logging.info("Finding splitted videos")
         parts_regex = re.compile("(.*[^0-9a-z]+)(cd\\d+)([^0-9a-z]+.*)", re.IGNORECASE)
-        splitted = [video_file for video_file in video_files if parts_regex.match(video_file)]
+
+        splitted = []
+        for video_file in video_files:
+            if parts_regex.match(video_file):
+                splitted.append(video_file)
+            else:
+                logging.debug(f"File {video_file} does not match pattern")
 
         logging.info("Matching videos")
         matched_videos = defaultdict(list)
@@ -30,16 +37,24 @@ class Concatenate(utils.InterruptibleProcess):
 
         logging.info("Processing groups")
         warnings = False
+        sorted_videos = {}
         for common_name, segments in matched_videos.items():
+
+            # sort parts by part number [1] (exclude 'CD' [2:])
+            segments = sorted(segments, key = lambda segment: int(segment[1][2:]))
+            sorted_videos[common_name] = segments
+
+            # collect all part numbers
             parts = []
             for segment in segments:
                 part = segment[1]       # cdXXX
                 partNo = part[2:]       # XXX
                 parts.append(int(partNo))
 
-            # expect parts to be numbered from 1 to N
-            parts.sort()
+            if len(parts) < 2:
+                logging.warning(f"There are less than two parts for video represented under a common name: {common_name}")
 
+            # expect parts to be numbered from 1 to N
             for i, value in enumerate(parts):
                 if i + 1 != value:
                     logging.warning(f"There is a mismatch in CD numbers for a group of files represented under a common name: {common_name}")
@@ -48,6 +63,19 @@ class Concatenate(utils.InterruptibleProcess):
         if warnings:
             logging.error("Fix above warnings and try again")
             return
+
+        logging.info("Files to be concatenated (in given order):")
+        for common_name, segments in sorted_videos.items():
+            paths = [pre + part + post for pre, part, post in segments]
+            common_path = os.path.commonpath(paths)
+            logging.info(f"Files from {common_path}:")
+
+            cl = len(common_path) + 1
+            for path in paths:
+                logging.info(f"\t{path[cl:]}")
+
+            logging.info(f"\t->{common_name}")
+
 
 
 def setup_parser(parser: argparse.ArgumentParser):
