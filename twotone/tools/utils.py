@@ -91,7 +91,7 @@ def file_encoding(file: str) -> str:
 
 
 def is_video(file: str) -> bool:
-    return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov"]
+    return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov", "rmvb"]
 
 
 def is_subtitle(file: str) -> bool:
