@@ -33,23 +33,23 @@ class Concatenate(utils.InterruptibleProcess):
         for video in splitted:
             match = parts_regex.search(video)
             name_without_part_number = match.group(1)[:-1] + match.group(3)                                     # remove last char before CDXXX as it is most likely space or hyphen
-            matched_videos[name_without_part_number].append((match.group(1), match.group(2), match.group(3)))
+            part = match.group(2)
+            partNo = int(part[2:])                                                                              # drop 'CD'
+            matched_videos[name_without_part_number].append((video, partNo))
 
         logging.info("Processing groups")
         warnings = False
         sorted_videos = {}
-        for common_name, segments in matched_videos.items():
+        for common_name, details in matched_videos.items():
 
-            # sort parts by part number [1] (exclude 'CD' [2:])
-            segments = sorted(segments, key = lambda segment: int(segment[1][2:]))
-            sorted_videos[common_name] = segments
+            # sort parts by part number [1]
+            details = sorted(details, key = lambda detail: detail[1])
+            sorted_videos[common_name] = details
 
             # collect all part numbers
             parts = []
-            for segment in segments:
-                part = segment[1]       # cdXXX
-                partNo = part[2:]       # XXX
-                parts.append(int(partNo))
+            for _, partNo in details:
+                parts.append(partNo)
 
             if len(parts) < 2:
                 logging.warning(f"There are less than two parts for video represented under a common name: {common_name}")
@@ -65,8 +65,8 @@ class Concatenate(utils.InterruptibleProcess):
             return
 
         logging.info("Files to be concatenated (in given order):")
-        for common_name, segments in sorted_videos.items():
-            paths = [pre + part + post for pre, part, post in segments]
+        for common_name, details in sorted_videos.items():
+            paths = [path for path, _ in details]
             common_path = os.path.commonpath(paths)
             logging.info(f"Files from {common_path}:")
 
@@ -75,6 +75,13 @@ class Concatenate(utils.InterruptibleProcess):
                 logging.info(f"\t{path[cl:]}")
 
             logging.info(f"\t->{common_name}")
+
+        if self.live_run:
+            logging.info("Starting concatenation")
+
+
+        else:
+            logging.info("Dry run: quitting without concatenation")
 
 
 
