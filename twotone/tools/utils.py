@@ -76,6 +76,11 @@ def start_process(process: str, args: [str], show_progress = False) -> ProcessRe
     return ProcessResult(sub_process.returncode, stdout, stderr)
 
 
+def raise_on_error(status: ProcessResult):
+    if status.returncode != 0:
+        raise RuntimeError(f"Process exited with unexpected error:\n{status.stdout}\n{status.stderr}")
+
+
 def file_encoding(file: str) -> str:
     detector = cchardet.UniversalDetector()
 
