@@ -27,7 +27,7 @@ class ConcatenateTests(unittest.TestCase):
     def _setup_valid_media(self, wd: str):
         media_files = add_test_media("Frog.*mp4", wd)
 
-        wdX = [os.path.join(wd, str(i)) for i in range(6)]
+        wdX = [os.path.join(wd, str(i)) for i in range(7)]
 
         for wdx in wdX:
             os.makedirs(wdx)
@@ -43,6 +43,9 @@ class ConcatenateTests(unittest.TestCase):
 
         shutil.copy2(media_file, os.path.join(wdX[5], "cd1.mp4"))
         shutil.copy2(media_file, os.path.join(wdX[5], "cd2.mp4"))
+
+        shutil.copy2(media_file, os.path.join(wdX[6], "''v'' cd1.mp4"))
+        shutil.copy2(media_file, os.path.join(wdX[6], "''v'' cd2.mp4"))
 
 
     def _setup_invalid_media(self, wd: str):
@@ -85,7 +88,7 @@ class ConcatenateTests(unittest.TestCase):
             tdl = len(td.path) + 1
 
             short_paths = [path[tdl:] for path in files_after]
-            self.assertEqual(short_paths, ['Frog - 113403.mp4', '0/Frog - 113403.mp4', '1/Frog - 113403.mp4', '2/Frog - 113403.mp4', '3/Frog - 113403.mp4', '4/Frog - 113403.mp4', '5/5.mp4'])
+            self.assertEqual(short_paths, ['Frog - 113403.mp4', '0/Frog - 113403.mp4', '1/Frog - 113403.mp4', '2/Frog - 113403.mp4', '3/Frog - 113403.mp4', '4/Frog - 113403.mp4', '5/5.mp4', "6/''v''.mp4"])
 
 
     def test_invalid_scenarios(self):
