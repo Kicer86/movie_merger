@@ -34,7 +34,18 @@ class Concatenate(utils.InterruptibleProcess):
         matched_videos = defaultdict(list)
         for video in splitted:
             match = parts_regex.search(video)
-            name_without_part_number = match.group(1)[:-1] + match.group(3)                                     # remove last char before CDXXX as it is most likely space or hyphen
+
+            path = match.group(1)
+            if path[-1] == os.sep:
+                # movie path is like: /dir/movie/cd1.mp4
+                # repeat last dir name as a base for output video file
+                last_dir_name = os.path.basename(os.path.normpath(path))
+                name_without_part_number = os.path.join(path, last_dir_name) + match.group(3)
+            else:
+                # movie path is like: /dir/movie/movie cd1.mp4.
+                # remove last char before CDXXX as it is most likely space or hyphen and use it as a base for output video file
+                name_without_part_number = path[:-1] + match.group(3)
+
             part = match.group(2)
             partNo = int(part[2:])                                                                              # drop 'CD'
             matched_videos[name_without_part_number].append((video, partNo))
@@ -55,6 +66,7 @@ class Concatenate(utils.InterruptibleProcess):
 
             if len(parts) < 2:
                 logging.warning(f"There are less than two parts for video represented under a common name: {common_name}")
+                warnings = True
 
             # expect parts to be numbered from 1 to N
             for i, value in enumerate(parts):
