@@ -52,5 +52,18 @@ class ConcatenateTests(unittest.TestCase):
             self.assertEqual(files_after, files_before)
 
 
+    def test_concatenation(self):
+        with TestDataWorkingDirectory() as td:
+            self._setup_valid_media(td.path)
+
+            twotone.execute(["-r", "concatenate", td.path])
+
+            files_after = list_files(td.path)
+            tdl = len(td.path) + 1
+
+            short_paths = [path[tdl:] for path in files_after]
+            self.assertEqual(short_paths, ['Frog - 113403.mp4', '0/Frog - 113403.mp4', '1/Frog - 113403.mp4', '2/Frog - 113403.mp4', '3/Frog - 113403.mp4', '4/Frog - 113403.mp4'])
+
+
 if __name__ == '__main__':
     unittest.main()

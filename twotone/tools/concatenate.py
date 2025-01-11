@@ -4,6 +4,8 @@ import logging
 import os
 import re
 from collections import defaultdict
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from . import utils
 
@@ -78,7 +80,21 @@ class Concatenate(utils.InterruptibleProcess):
 
         if self.live_run:
             logging.info("Starting concatenation")
+            with logging_redirect_tqdm():
+                for output, details in tqdm(sorted_videos.items(), desc="Concatenating", unit="movie", **utils.get_tqdm_defaults()):
+                    input_files = [video for video, _ in details]
 
+                    def escape_path(path: str) -> str:
+                        return path.replace("'", "''")
+
+                    input_file_content = [f"file '{escape_path(input_file)}'" for input_file in input_files]
+                    with utils.TempFileManager("\n".join(input_file_content), "txt") as input_file:
+                        ffmpeg_args = ["-f", "concat", "-safe", "0", "-i", input_file, "-c", "copy", output]
+
+                        utils.raise_on_error(utils.start_process("ffmpeg", ffmpeg_args))
+
+                        for input_file in input_files:
+                            os.remove(input_file)
 
         else:
             logging.info("Dry run: quitting without concatenation")
