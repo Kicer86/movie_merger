@@ -8,6 +8,7 @@ import re
 import signal
 import subprocess
 import sys
+import tempfile
 import uuid
 from collections import namedtuple
 from itertools import islice
@@ -384,3 +385,21 @@ def get_unique_file_name(directory: str, extension: str) -> str:
 
         if not os.path.exists(full_path):
             return full_path
+
+
+class TempFileManager:
+    def __init__(self, content: str, extension: str = None):
+        self.content = content
+        self.extension = extension
+        self.filepath = None
+
+    def __enter__(self):
+        with tempfile.NamedTemporaryFile(delete = False, suffix = "." + self.extension, mode = 'w') as temp_file:
+            self.filepath = temp_file.name
+            temp_file.write(self.content)
+
+        return self.filepath
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.filepath and os.path.exists(self.filepath):
+            os.remove(self.filepath)
