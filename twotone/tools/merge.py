@@ -1,5 +1,6 @@
 
 import argparse
+import glob
 import langid
 import logging
 import os
@@ -9,6 +10,7 @@ import tempfile
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 from . import utils
 
@@ -50,20 +52,50 @@ class TwoTone(utils.InterruptibleProcess):
 
         return utils.SubtitleFile(path, language, encoding)
 
-    def _simple_subtitle_search(self, path: str) -> [utils.SubtitleFile]:
-        video_name = Path(path).stem
-        directory = Path(path).parent
-
+    def _directory_subtitle_matcher(self, dir_path: str) -> Dict[str, List[utils.SubtitleFile]]:
+        """
+            Match subtitles to videos found in 'path' directory
+        """
+        videos = []
         subtitles = []
 
-        for subtitle_ext in ["txt", "srt"]:
-            subtitle_file = video_name + "." + subtitle_ext
-            subtitle_path = os.path.join(directory, subtitle_file)
-            if os.path.exists(subtitle_path) and utils.is_subtitle(subtitle_path):
-                subtitle = self._build_subtitle_from_path(subtitle_path)
-                subtitles.append(subtitle)
+        matches = {}
 
-        return subtitles
+        with os.scandir(dir_path) as it:
+            for entry in it:
+                if entry.is_file():
+                    path = entry.path
+                    if utils.is_video(path):
+                        videos.append(path)
+                    elif utils.is_subtitle(path):
+                        subtitles.append(path)
+
+        # sort both lists by lenght
+        videos = sorted(videos, reverse = True, key = lambda k: len(k))
+        subtitles = sorted(subtitles, reverse = True, key = lambda k: len(k))
+
+        for video in videos:
+            video_parts = utils.split_path(video)
+            video_file_name = video_parts[1]
+
+            matching_subtitles = []
+            for subtitle in subtitles:
+                subtitle_parts = utils.split_path(subtitle)
+                subtitle_file_name = subtitle_parts[1]
+
+                if subtitle_file_name.startswith(video_file_name):
+                    matching_subtitles.append(subtitle)
+
+            for subtitle in matching_subtitles:
+                subtitles.remove(subtitle)
+
+            matches[video] = [self._build_subtitle_from_path(subtitle) for subtitle in matching_subtitles]
+
+        if len(subtitles) > 0:
+            logging.warning(f"When matching videos with subtitles in {path}, given subtitles were not matched to any video: {"\n".join(subtitles)}")
+
+        return matches
+
 
     def _recursive_subtitle_search(self, path: str) -> [utils.SubtitleFile]:
         found_subtitles = []
@@ -91,7 +123,10 @@ class TwoTone(utils.InterruptibleProcess):
         return subtitles
 
     def _aggressive_subtitle_search(self, path: str) -> [utils.SubtitleFile]:
-        subtitles = self._simple_subtitle_search(path)
+        """
+            Function collects all subtitles in video dir and from all subdirs
+        """
+        subtitles = []
         directory = Path(path).parent
 
         for entry in os.scandir(directory):
@@ -102,7 +137,7 @@ class TwoTone(utils.InterruptibleProcess):
                 subtitle = self._build_subtitle_from_path(entry.path)
                 subtitles.append(subtitle)
 
-        return list(set(subtitles))
+        return subtitles
 
     @staticmethod
     def _get_index_for(l: [], value):
@@ -206,18 +241,26 @@ class TwoTone(utils.InterruptibleProcess):
 
         logging.debug("\tDone")
 
-    def _process_video(self, video_file: str, subtitles_fetcher):
-        logging.debug(f"Analyzing subtitles for video: {video_file}")
-        subtitles = subtitles_fetcher(video_file)
+    def _process_single_video(self, video_file: str) -> Tuple[str, List[utils.SubtitleFile]]:
+        logging.debug(f"Analyzing subtitles for a single video: {video_file}")
+        subtitles = self._aggressive_subtitle_search(video_file)
 
         if len(subtitles) == 0:
             return None
         else:
             return (video_file, subtitles)
 
-    def _process_dir(self, path: str):
+    def _process_dir_with_many_videos(self, dir_path: str) -> Dict[str, List[utils.SubtitleFile]]:
+        """
+            Function launches matching for videos in subtitles in directory with many videos
+        """
+        logging.debug(f"Analyzing subtitles for videos in: {dir_path}")
+        return self._directory_subtitle_matcher(dir_path)
+
+
+    def _process_dir(self, path: str) -> Dict[str, List[utils.SubtitleFile]]:
         logging.debug(f"Finding videos in {path}")
-        videos_and_subtitles = []
+        videos_and_subtitles = {}
 
         for cd, _, files in os.walk(path, followlinks = True):
             video_files = []
@@ -231,30 +274,37 @@ class TwoTone(utils.InterruptibleProcess):
             # check if number of unique file names (excluding extensions) is equal to number of files (including extensions).
             # if no, then it means there are at least two video files with the same name but different extension.
             # this is a cumbersome situation so just don't allow it
-            unique_names = set( Path(video).stem for video in video_files)
+            unique_names = set(Path(video).stem for video in video_files)
             if len(unique_names) != len(video_files):
                 logging.warning(f"Two video files with the same name found in {cd}. This is not supported, skipping whole directory.")
                 continue
 
-            subtitles_finder = self._aggressive_subtitle_search if len(video_files) == 1 else self._simple_subtitle_search
-            for video_file in video_files:
-                vs = self._process_video(video_file, subtitles_finder)
-                if vs is not None:
-                    videos_and_subtitles.append(vs)
+            videos = len(video_files)
+            if videos == 1:
+                video_and_subtitles = self._process_single_video(video_files[0])
+
+                if video_and_subtitles is not None:
+                    (video, subtitles) = video_and_subtitles
+                    videos_and_subtitles[video] = subtitles
+            elif videos > 1:
+                matching_videos_and_subtitles = self._process_dir_with_many_videos(cd)
+
+                videos_and_subtitles.update(matching_videos_and_subtitles)
 
         return videos_and_subtitles
+
 
     def process_dir(self, path: str):
         logging.info(f"Looking for video and subtitle files in {path}")
         vas = self._process_dir(path)
 
         logging.info(f"Found {len(vas)} videos with subtitles to merge")
-        for video, _ in vas:
+        for video in vas:
             logging.debug(video)
 
         logging.info("Starting merge")
         with logging_redirect_tqdm():
-            for video, subtitles in tqdm(vas, desc="Merging", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=utils.hide_progressbar()):
+            for video, subtitles in tqdm(vas.items(), desc="Merging", unit="video", leave=False, smoothing=0.1, mininterval=.2, disable=utils.hide_progressbar()):
                 self._check_for_stop()
                 self._merge(video, subtitles)
 

@@ -1,6 +1,6 @@
 
 import logging
-import os.path
+import os
 import re
 import subprocess
 import unittest
@@ -103,6 +103,26 @@ class SubtitlesMerge(unittest.TestCase):
             self.assertEqual(len(tracks.video_tracks), 1)
             self.assertEqual(len(tracks.subtitles), 1)
             self.assertEqual(tracks.subtitles[0].language, "pol")
+
+    def test_subtitles_with_a_bit_different_names(self):
+        with TestDataWorkingDirectory() as td:
+
+            add_test_media("moon_dark.*|Woman.*", td.path)
+            os.rename(os.path.join(td.path, "moon_dark.srt"), os.path.join(td.path, "moon_dark_de.srt"))
+            os.rename(os.path.join(td.path, "Woman - 58142.srt"), os.path.join(td.path, "Woman - 58142_de.srt"))
+
+            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "ger"])
+
+            # verify results
+            files_after = list_files(td.path)
+            self.assertEqual(len(files_after), 2)
+
+            for video in files_after:
+                self.assertEqual(video[-4:], ".mkv")
+                tracks = utils.get_video_data(video)
+                self.assertEqual(len(tracks.video_tracks), 1)
+                self.assertEqual(len(tracks.subtitles), 1)
+                self.assertEqual(tracks.subtitles[0].language, "ger")
 
     def test_multiple_subtitles_for_single_file(self):
         with TestDataWorkingDirectory() as td:
