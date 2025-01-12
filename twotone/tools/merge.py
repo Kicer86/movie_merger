@@ -156,7 +156,7 @@ class Merge(utils.InterruptibleProcess):
 
                     # prepare new output file, and use previous one as new input
                     input_file = output_file
-                    output_file = self._get_temporary_file("srt")
+                    output_file = utils.get_unique_file_name(temporary_dir, "srt")
 
                     utils.fix_subtitles_fps(input_file, output_file, fps)
 
