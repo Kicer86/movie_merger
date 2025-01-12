@@ -198,7 +198,7 @@ class TwoTone(utils.InterruptibleProcess):
         return result
 
     def _merge(self, input_video: str, subtitles: [utils.SubtitleFile]):
-        logging.info(f"Video file: {input_video}")
+        logging.info(f"Merging video file: {input_video} with subtitles:")
 
         video_dir, video_name, video_extension = utils.split_path(input_video)
         output_video = video_dir + "/" + video_name + "." + "mkv"
@@ -218,11 +218,10 @@ class TwoTone(utils.InterruptibleProcess):
         # set subtitles and languages
         sorted_subtitles = self._sort_subtitles(subtitles)
         sorted_subtitles_str = ", ".join([subtitle.language if subtitle.language is not None else "unknown" for subtitle in sorted_subtitles])
-        logging.info(f"Merging with subtitles in languages: [{sorted_subtitles_str}]")
 
         prepared_subtitles = []
         for subtitle in sorted_subtitles:
-            logging.debug(f"\tregister subtitle [{subtitle.language}]: {subtitle.path}")
+            logging.info(f"\t[{subtitle.language}]: {subtitle.path}")
             self._register_input(subtitle.path)
 
             # Subtitles are buggy sometimes, use ffmpeg to fix them.
