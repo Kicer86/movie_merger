@@ -18,7 +18,7 @@ from . import utils
 work = True
 
 
-class TwoTone(utils.InterruptibleProcess):
+class Merge(utils.InterruptibleProcess):
 
     def __init__(self, dry_run: bool, language: str, lang_priority: str):
         super().__init__()
@@ -315,7 +315,7 @@ def run(args):
             logging.debug(f"{tool} path: {path}")
 
     logging.info("Searching for movie and subtitle files to be merged")
-    two_tone = TwoTone(dry_run=not args.no_dry_run,
+    two_tone = Merge(dry_run=not args.no_dry_run,
                        language=args.language,
                        lang_priority=args.languages_priority)
     two_tone.process_dir(args.videos_path[0])
