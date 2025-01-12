@@ -88,7 +88,8 @@ class ConcatenateTests(unittest.TestCase):
             tdl = len(td.path) + 1
 
             short_paths = [path[tdl:] for path in files_after]
-            self.assertEqual(short_paths, ['Frog - 113403.mp4', '0/Frog - 113403.mp4', '1/Frog - 113403.mp4', '2/Frog - 113403.mp4', '3/Frog - 113403.mp4', '4/Frog - 113403.mp4', '5/5.mp4', "6/''v''.mp4"])
+            short_paths.sort()
+            self.assertEqual(short_paths, ['0/Frog - 113403.mp4', '1/Frog - 113403.mp4', '2/Frog - 113403.mp4', '3/Frog - 113403.mp4', '4/Frog - 113403.mp4', '5/5.mp4', "6/''v''.mp4", 'Frog - 113403.mp4'])
 
 
     def test_invalid_scenarios(self):
