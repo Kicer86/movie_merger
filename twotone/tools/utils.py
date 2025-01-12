@@ -8,6 +8,7 @@ import re
 import signal
 import subprocess
 import sys
+import uuid
 from collections import namedtuple
 from itertools import islice
 from pathlib import Path
@@ -360,3 +361,12 @@ class InterruptibleProcess:
         if not self._work:
             logging.warning("Exiting now due to received signal.")
             sys.exit(1)
+
+
+def get_unique_file_name(directory: str, extension: str) -> str:
+    while True:
+        file_name = f"{uuid.uuid4().hex}.{extension}"
+        full_path = os.path.join(directory, file_name)
+
+        if not os.path.exists(full_path):
+            return full_path
