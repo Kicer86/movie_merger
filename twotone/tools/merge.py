@@ -24,27 +24,7 @@ class TwoTone(utils.InterruptibleProcess):
         super().__init__()
         self.dry_run = dry_run
         self.language = language
-        self.to_be_removed = []
         self.lang_priority = [] if not lang_priority or lang_priority == "" else lang_priority.split(",")
-
-    def _get_temporary_file(self, ext: str) -> str:
-        tmp_file = tempfile.mkstemp(suffix="."+ext)
-        tmp_path = tmp_file[1]
-        self._remove_later(tmp_path)
-        return tmp_path
-
-    def _register_input(self, path: str):
-        if not self.dry_run:
-            self._remove_later(path)
-
-    def _remove_later(self, path: str):
-        self.to_be_removed.append(path)
-
-    def _remove(self):
-        for file_to_remove in self.to_be_removed:
-            os.remove(file_to_remove)
-
-        self.to_be_removed.clear()
 
     def _build_subtitle_from_path(self, path: str) -> utils.SubtitleFile:
         encoding = utils.file_encoding(path)
@@ -154,12 +134,12 @@ class TwoTone(utils.InterruptibleProcess):
 
         return subtitles_sorted
 
-    def _convert_subtitle(self, video_fps: str, subtitle: utils.SubtitleFile) -> [utils.SubtitleFile]:
+    def _convert_subtitle(self, video_fps: str, subtitle: utils.SubtitleFile, temporary_dir: str) -> [utils.SubtitleFile]:
         converted_subtitle = subtitle
 
         if not self.dry_run:
             input_file = subtitle.path
-            output_file = self._get_temporary_file("srt")
+            output_file = utils.get_unique_file_name(temporary_dir, "srt")
             encoding = subtitle.encoding if subtitle.encoding != "UTF-8-SIG" else "utf-8"
 
             status = utils.start_process("ffmpeg",
@@ -202,42 +182,44 @@ class TwoTone(utils.InterruptibleProcess):
 
         video_dir, video_name, video_extension = utils.split_path(input_video)
         output_video = video_dir + "/" + video_name + "." + "mkv"
+        temporary_output_video = video_dir + "/_tt_merge_" + video_name + "." + "mkv"
 
         # collect details about input file
         input_file_details = utils.get_video_data(input_video)
 
-        # make sure output file does not exist
-        i = 1
-        while os.path.exists(output_video):
-            output_video = video_dir + "/" + video_name + "." + str(i) + "." + "mkv"
-            i += 1
+        input_files = []
 
         # register input for removal
-        self._register_input(input_video)
+        input_files.append(input_video)
 
         # set subtitles and languages
         sorted_subtitles = self._sort_subtitles(subtitles)
         sorted_subtitles_str = ", ".join([subtitle.language if subtitle.language is not None else "unknown" for subtitle in sorted_subtitles])
 
-        prepared_subtitles = []
-        for subtitle in sorted_subtitles:
-            logging.info(f"\t[{subtitle.language}]: {subtitle.path}")
-            self._register_input(subtitle.path)
+        with tempfile.TemporaryDirectory() as temporary_subtitles_dir:
+            prepared_subtitles = []
+            for subtitle in sorted_subtitles:
+                logging.info(f"\t[{subtitle.language}]: {subtitle.path}")
+                input_files.append(subtitle.path)
 
-            # Subtitles are buggy sometimes, use ffmpeg to fix them.
-            # Also makemkv does not handle MicroDVD subtitles, so convert all to SubRip.
-            fps = input_file_details.video_tracks[0].fps
-            converted_subtitle = self._convert_subtitle(fps, subtitle)
+                # Subtitles are buggy sometimes, use ffmpeg to fix them.
+                # Also makemkv does not handle MicroDVD subtitles, so convert all to SubRip.
+                fps = input_file_details.video_tracks[0].fps
+                converted_subtitle = self._convert_subtitle(fps, subtitle, temporary_subtitles_dir)
 
-            prepared_subtitles.append(converted_subtitle)
+                prepared_subtitles.append(converted_subtitle)
 
-        # perform
-        logging.debug("\tMerge in progress...")
-        if not self.dry_run:
-            utils.generate_mkv(input_video=input_video, output_path=output_video, subtitles=prepared_subtitles)
+            # perform
+            logging.debug("\tMerge in progress...")
+            if not self.dry_run:
+                utils.generate_mkv(input_video=input_video, output_path=temporary_output_video, subtitles=prepared_subtitles)
 
-        # Remove all inputs and temporary files. Only output file should left
-        self._remove()
+                # Remove all inputs
+                for input in input_files:
+                    os.remove(input)
+
+                # rename final file to a proper one
+                shutil.move(temporary_output_video, output_video)
 
         logging.debug("\tDone")
 
