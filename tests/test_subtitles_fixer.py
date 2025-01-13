@@ -7,7 +7,7 @@ import tempfile
 import twotone.tools.utils as utils
 import twotone.twotone as twotone
 
-from common import TestDataWorkingDirectory, add_test_media, hashes, current_path, generate_microdvd_subtitles
+from common import WorkingDirectoryForTest, add_test_media, hashes, current_path, generate_microdvd_subtitles
 
 
 def create_broken_video_with_scaled_subtitle_timings(output_video_path: str, input_video: str):
@@ -73,7 +73,7 @@ class SubtitlesFixer(unittest.TestCase):
         logging.getLogger().setLevel(logging.ERROR)
 
     def test_dry_run_is_respected(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             output_video_path = f"{td.path}/test_video.mkv"
             create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
@@ -84,7 +84,7 @@ class SubtitlesFixer(unittest.TestCase):
             self.assertEqual(hashes_before, hashes_after)
 
     def test_video_with_scaled_subtitle_timings_fixing(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             output_video_path = f"{td.path}/test_video.mkv"
             create_broken_video_with_scaled_subtitle_timings(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
@@ -100,7 +100,7 @@ class SubtitlesFixer(unittest.TestCase):
             self.assertEqual(hashes_after, hashes_after_after)
 
     def test_video_with_too_long_last_subtitle_fixing(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             output_video_path = f"{td.path}/test_video.mkv"
             create_broken_video_with_too_long_last_subtitle(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 
@@ -116,7 +116,7 @@ class SubtitlesFixer(unittest.TestCase):
             self.assertEqual(hashes_after, hashes_after_after)
 
     def test_deal_with_incompatible_videos(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             output_video_path = f"{td.path}/test_video.mkv"
             create_broken_video_with_incompatible_subtitles(output_video_path, f"{current_path}/videos/sea-waves-crashing-on-beach-shore-4793288.mp4")
 

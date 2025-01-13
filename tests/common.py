@@ -17,7 +17,7 @@ import twotone.twotone as twotone
 current_path = os.path.dirname(os.path.abspath(__file__))
 
 
-class TestDataWorkingDirectory:
+class WorkingDirectoryForTest:
     def __init__(self):
         self.directory = None
 

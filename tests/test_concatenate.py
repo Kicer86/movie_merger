@@ -6,7 +6,7 @@ import unittest
 from typing import List
 
 from twotone.tools.utils import split_path
-from common import TestDataWorkingDirectory, add_test_media, list_files, run_twotone
+from common import WorkingDirectoryForTest, add_test_media, list_files, run_twotone
 
 
 class ConcatenateTests(unittest.TestCase):
@@ -66,7 +66,7 @@ class ConcatenateTests(unittest.TestCase):
 
 
     def test_dry_run_is_respected(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             self._setup_valid_media(td.path)
 
             files_before = list_files(td.path)
@@ -77,7 +77,7 @@ class ConcatenateTests(unittest.TestCase):
 
 
     def test_concatenation(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             self._setup_valid_media(td.path)
 
             run_twotone("concatenate", [td.path], ["-r"])
@@ -91,7 +91,7 @@ class ConcatenateTests(unittest.TestCase):
 
 
     def test_invalid_scenarios(self):
-         with TestDataWorkingDirectory() as td:
+         with WorkingDirectoryForTest() as td:
             cases = self._setup_invalid_media(td.path)
             files_before = list_files(td.path)
             for case in cases:
