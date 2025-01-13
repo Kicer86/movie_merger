@@ -3,14 +3,19 @@ import argparse
 import logging
 import sys
 
-from .tools import merge, subtitles_fixer, transcode
+from .tools import melt, merge, subtitles_fixer, transcode
 
 TOOLS = {
-    "merge": (merge.setup_parser, merge.run, "Batch tool: merge video file with subtitles into one MKV file"),
-    "subtitles_fix": (subtitles_fixer.setup_parser, subtitles_fixer.run, "Batch tool: fixes some specific issues with subtitles. Do not use until you are sure it will help for your problems."),
-    "transcode": (transcode.setup_parser, transcode.run, "Batch tool: transcode videos from provided directory preserving quality."),
+    "melt": (melt.setup_parser, melt.run, "[Not ready yet] Find same video files and combine them into one containg best of all copies."),
+    "merge": (merge.setup_parser, merge.run, "Merge video files with corresponding subtitles into one MKV file"),
+    "subtitles_fix": (subtitles_fixer.setup_parser, subtitles_fixer.run, "Fixes some specific issues with subtitles. Do not use until you are sure it will help for your problems."),
+    "transcode": (transcode.setup_parser, transcode.run, "Transcode videos from provided directory preserving quality."),
 }
 
+
+class CustomFormatter(argparse.HelpFormatter):
+    def _split_lines(self, text, width):
+        return text.splitlines()
 
 def execute(argv):
     parser = argparse.ArgumentParser(
@@ -21,7 +26,7 @@ def execute(argv):
                     'Please mind that ALL source files will be modified, so consider making a backup. '
                     'It is safe to stop any tool with ctrl+c - it will quit '
                     'gracefully in a while.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=CustomFormatter
     )
 
     parser.add_argument("--verbose",
@@ -37,7 +42,7 @@ def execute(argv):
         tool_parser = subparsers.add_parser(
             tool_name,
             help=desc,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            formatter_class=CustomFormatter
         )
         setup_parser(tool_parser)
 
@@ -63,7 +68,7 @@ def main():
     try:
         execute(sys.argv[1:])
     except RuntimeError as e:
-        logging.error(f"Unexpected error occurred: {e}. Terminating")
+        logging.error(f"Error occurred: {e}. Terminating")
 
 if __name__ == '__main__':
     main()
