@@ -22,7 +22,15 @@ class TestDataWorkingDirectory:
         return self.directory
 
     def __enter__(self):
-        self.directory = os.path.join(tempfile.gettempdir(), "twotone_tests", inspect.stack()[1].function)
+        stack_level = inspect.stack()[1]
+        frame = stack_level.frame
+        cname = ""
+        if 'self' in frame.f_locals:
+            cname = frame.f_locals['self'].__class__.__name__
+        elif 'cls' in frame.f_locals:
+            cname = frame.f_locals['cls'].__name__
+
+        self.directory = os.path.join(tempfile.gettempdir(), "twotone_tests", cname, stack_level.function)
         if os.path.exists(self.directory):
             shutil.rmtree(self.directory)
 
