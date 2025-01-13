@@ -6,7 +6,7 @@ import sys
 from .tools import melt, merge, subtitles_fixer, transcode
 
 TOOLS = {
-    "melt": (melt.setup_parser, melt.run, "Find same video files and combine them into one containg best of all copies."),
+    "melt": (melt.setup_parser, melt.run, "[Not ready yet] Find same video files and combine them into one containg best of all copies."),
     "merge": (merge.setup_parser, merge.run, "Merge video files with corresponding subtitles into one MKV file"),
     "subtitles_fix": (subtitles_fixer.setup_parser, subtitles_fixer.run, "Fixes some specific issues with subtitles. Do not use until you are sure it will help for your problems."),
     "transcode": (transcode.setup_parser, transcode.run, "Transcode videos from provided directory preserving quality."),
