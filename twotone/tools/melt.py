@@ -100,8 +100,9 @@ class JellyfinSource(DuplicatesSource):
                         name = names[0]
                         duplicates[name] = fixed_paths
                     else:
-                        logging.warning(f"Different names for the same movie ({provider}: {id}):\n{
-                                        '\n'.join(names)}.\nJellyfin files:\n{'\n'.join(fixed_paths)}\nSkipping.")
+                        names_str = '\n'.join(names)
+                        paths_str = '\n'.join(fixed_paths)
+                        logging.warning(f"Different names for the same movie ({provider}: {id}):\n{names_str}.\nJellyfin files:\n{paths_str}\nSkipping.")
 
         return duplicates
 
