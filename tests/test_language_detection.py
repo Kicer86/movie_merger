@@ -4,13 +4,13 @@ import unittest
 
 import twotone.tools.utils as utils
 import twotone.twotone as twotone
-from common import TestDataWorkingDirectory, list_files, add_test_media
+from common import WorkingDirectoryForTest, list_files, add_test_media
 
 
 class SimpleSubtitlesMerge(unittest.TestCase):
 
     def test_english_recognition(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             add_test_media("Frog.*mp4", td.path)
 
             with open(os.path.join(td.path, "Frog.txt"), "w") as sf:
@@ -30,7 +30,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(tracks.subtitles[0].language, "eng")
 
     def test_polish_recognition(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             add_test_media("Frog.*mp4", td.path)
 
             with open(os.path.join(td.path, "Frog.txt"), "w") as sf:
@@ -50,7 +50,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             self.assertEqual(tracks.subtitles[0].language, "pol")
 
     def test_language_priority(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             add_test_media("close-up-of-flowers.*mp4", td.path)
             with open(os.path.join(td.path, "close-up-of-flowers_en.srt"), "w") as sf:
                 sf.write("00:00:00:Hello World\n")
