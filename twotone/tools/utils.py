@@ -8,10 +8,12 @@ import re
 import signal
 import subprocess
 import sys
+import tempfile
 import uuid
 from collections import namedtuple
 from itertools import islice
 from pathlib import Path
+from typing import List
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -74,6 +76,11 @@ def start_process(process: str, args: [str], show_progress = False) -> ProcessRe
     return ProcessResult(sub_process.returncode, stdout, stderr)
 
 
+def raise_on_error(status: ProcessResult):
+    if status.returncode != 0:
+        raise RuntimeError(f"Process exited with unexpected error:\n{status.stdout}\n{status.stderr}")
+
+
 def file_encoding(file: str) -> str:
     detector = cchardet.UniversalDetector()
 
@@ -90,7 +97,7 @@ def file_encoding(file: str) -> str:
 
 
 def is_video(file: str) -> bool:
-    return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov"]
+    return Path(file).suffix[1:].lower() in ["mkv", "mp4", "avi", "mpg", "mpeg", "mov", "rmvb"]
 
 
 def is_subtitle(file: str) -> bool:
@@ -363,6 +370,19 @@ class InterruptibleProcess:
             sys.exit(1)
 
 
+def collect_video_files(path: str, interruptible: InterruptibleProcess) -> List[str]:
+    video_files = []
+    for cd, _, files in os.walk(path, followlinks = True):
+        for file in files:
+            interruptible._check_for_stop()
+            file_path = os.path.join(cd, file)
+
+            if is_video(file_path):
+                video_files.append(file_path)
+
+    return video_files
+
+
 def get_unique_file_name(directory: str, extension: str) -> str:
     while True:
         file_name = f"{uuid.uuid4().hex}.{extension}"
@@ -370,3 +390,21 @@ def get_unique_file_name(directory: str, extension: str) -> str:
 
         if not os.path.exists(full_path):
             return full_path
+
+
+class TempFileManager:
+    def __init__(self, content: str, extension: str = None):
+        self.content = content
+        self.extension = extension
+        self.filepath = None
+
+    def __enter__(self):
+        with tempfile.NamedTemporaryFile(delete = False, suffix = "." + self.extension, mode = 'w') as temp_file:
+            self.filepath = temp_file.name
+            temp_file.write(self.content)
+
+        return self.filepath
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.filepath and os.path.exists(self.filepath):
+            os.remove(self.filepath)
