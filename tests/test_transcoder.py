@@ -4,7 +4,7 @@ import logging
 
 import twotone.twotone as twotone
 from twotone.tools.transcode import Transcoder
-from common import WorkingDirectoryForTest, get_video, add_test_media, hashes
+from common import WorkingDirectoryForTest, get_video, add_test_media, hashes, run_twotone
 
 
 class TranscoderTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class TranscoderTests(unittest.TestCase):
             self.assertEqual(len(hashes_before), 4)
 
             try:
-                twotone.execute(["transcode", td.path])
+                run_twotone("transcode", [td.path])
             except:
                 self.assertTrue(False)
 
@@ -49,7 +49,7 @@ class TranscoderTests(unittest.TestCase):
             self.assertEqual(len(hashes_before), 3)
 
             try:
-                twotone.execute(["-r", "transcode", td.path])
+                run_twotone("transcode", [td.path], ["-r"])
             except:
                 self.assertTrue(False)
 

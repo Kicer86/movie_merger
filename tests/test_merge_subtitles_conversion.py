@@ -3,8 +3,7 @@ import os
 import unittest
 
 import twotone.tools.utils as utils
-import twotone.twotone as twotone
-from common import WorkingDirectoryForTest, list_files, add_test_media, generate_microdvd_subtitles
+from common import WorkingDirectoryForTest, list_files, add_test_media, generate_microdvd_subtitles, run_twotone
 
 
 class SubtitlesConversion(unittest.TestCase):
@@ -15,7 +14,7 @@ class SubtitlesConversion(unittest.TestCase):
             add_test_media("sea-waves-crashing-on-beach-shore.*mp4", td.path)
             generate_microdvd_subtitles(os.path.join(td.path, "sea-waves.txt"), 25)
 
-            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto"])
+            run_twotone("merge", [td.path, "-l", "auto"], ["--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
@@ -49,7 +48,7 @@ class SubtitlesConversion(unittest.TestCase):
             add_test_media("moon_23.976.mp4", td.path)
             generate_microdvd_subtitles(os.path.join(td.path, "moon_23.976.txt"), length = 1, fps = utils.ffmpeg_default_fps)
 
-            twotone.execute(["--no-dry-run", "merge", td.path, "-l", "auto"])
+            run_twotone("merge", [td.path, "-l", "auto"], ["--no-dry-run"])
 
             files_after = list_files(td.path)
             self.assertEqual(len(files_after), 1)
