@@ -4,8 +4,7 @@ import os
 import unittest
 
 import twotone.tools.utils as utils
-import twotone.twotone as twotone
-from common import TestDataWorkingDirectory, add_test_media, hashes
+from common import TestDataWorkingDirectory, add_test_media, hashes, run_twotone
 from unittest.mock import patch
 
 
@@ -34,7 +33,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
             try:
-                twotone.execute(["--no-dry-run", "merge", td.path])
+                run_twotone("merge", [td.path], ["--no-dry-run"])
             except RuntimeError:
                 pass
 
@@ -61,7 +60,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
             try:
-                twotone.execute(["--no-dry-run", "merge", td.path])
+                run_twotone("merge", [td.path], ["--no-dry-run"])
             except RuntimeError:
                 pass
 
@@ -87,7 +86,7 @@ class SimpleSubtitlesMerge(unittest.TestCase):
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 2)
             try:
-                twotone.execute(["--no-dry-run", "merge", td.path])
+                run_twotone("merge", [td.path], ["--no-dry-run"])
             except RuntimeError:
                 pass
 

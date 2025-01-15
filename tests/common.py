@@ -11,6 +11,9 @@ import tempfile
 from pathlib import Path
 from typing import List
 
+import twotone.twotone as twotone
+
+
 current_path = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -107,3 +110,7 @@ def generate_microdvd_subtitles(path: str, length: int, fps: float = 60):
             # add some empty entries to satisfy ffmpeg
             sf.write(f"{{{e}}}{{{e + 1}}}\n")
             sf.write(f"{{{e + 1}}}{{{e + 2}}}\n")
+
+
+def run_twotone(tool: str, tool_options = [], global_options = []):
+    twotone.execute([*global_options, tool, *tool_options])

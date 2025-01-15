@@ -5,10 +5,8 @@ import shutil
 import unittest
 from typing import List
 
-import twotone.twotone as twotone
-from twotone.tools.transcode import Transcoder
 from twotone.tools.utils import split_path
-from common import TestDataWorkingDirectory, add_test_media, list_files
+from common import TestDataWorkingDirectory, add_test_media, list_files, run_twotone
 
 
 class ConcatenateTests(unittest.TestCase):
@@ -72,7 +70,7 @@ class ConcatenateTests(unittest.TestCase):
             self._setup_valid_media(td.path)
 
             files_before = list_files(td.path)
-            twotone.execute(["concatenate", td.path])
+            run_twotone("concatenate", [td.path])
 
             files_after = list_files(td.path)
             self.assertEqual(files_after, files_before)
@@ -82,7 +80,7 @@ class ConcatenateTests(unittest.TestCase):
         with TestDataWorkingDirectory() as td:
             self._setup_valid_media(td.path)
 
-            twotone.execute(["-r", "concatenate", td.path])
+            run_twotone("concatenate", [td.path], ["-r"])
 
             files_after = list_files(td.path)
             tdl = len(td.path) + 1
@@ -97,7 +95,7 @@ class ConcatenateTests(unittest.TestCase):
             cases = self._setup_invalid_media(td.path)
             files_before = list_files(td.path)
             for case in cases:
-                twotone.execute(["-r", "concatenate", case])
+                run_twotone("concatenate", [case], ["-r"])
 
             files_after = list_files(td.path)
             self.assertEqual(files_after, files_before)
