@@ -106,10 +106,16 @@ class Concatenate(utils.InterruptibleProcess):
 
                     logging.info(f"Concatenating files into {output} file")
                     if self.live_run:
-                        utils.raise_on_error(utils.start_process("ffmpeg", ffmpeg_args))
-
-                        for input_file in input_files:
-                            os.remove(input_file)
+                        status = utils.start_process("ffmpeg", ffmpeg_args)
+                        if status.returncode == 0:
+                            for input_file in input_files:
+                                os.remove(input_file)
+                        else:
+                            logging.error(f"Problems with concatenation, skipping file {output}")
+                            logging.debug(status.stdout)
+                            logging.debug(status.stderr)
+                            if os.path.exists(output):
+                                os.remove(output)
                     else:
                         logging.info("Dry run, skipping concatenation")
 
