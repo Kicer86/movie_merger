@@ -4,7 +4,7 @@ import logging
 
 import twotone.twotone as twotone
 from twotone.tools.transcode import Transcoder
-from common import TestDataWorkingDirectory, get_video, add_test_media, hashes
+from common import WorkingDirectoryForTest, get_video, add_test_media, hashes, run_twotone
 
 
 class TranscoderTests(unittest.TestCase):
@@ -26,13 +26,13 @@ class TranscoderTests(unittest.TestCase):
             self.assertTrue(abs(best_enc_no_segments - best_enc_segments) < 2)
 
     def test_transcoding_on_short_videos_dry_run(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
             add_test_media("VID_20240412_1815.*", td.path, copy = True)
             hashes_before = hashes(td.path)
             self.assertEqual(len(hashes_before), 4)
 
             try:
-                twotone.execute(["transcode", td.path])
+                run_twotone("transcode", [td.path])
             except:
                 self.assertTrue(False)
 
@@ -40,7 +40,7 @@ class TranscoderTests(unittest.TestCase):
             self.assertEqual(hashes_after, hashes_before)
 
     def test_transcoding_on_short_videos_live_run(self):
-        with TestDataWorkingDirectory() as td:
+        with WorkingDirectoryForTest() as td:
 
             # VID_20240412_181520.mp4 does not transcode properly with ffmpeg 7.0. With 7.1 it works.
             # Disable as of now
@@ -49,7 +49,7 @@ class TranscoderTests(unittest.TestCase):
             self.assertEqual(len(hashes_before), 3)
 
             try:
-                twotone.execute(["-r", "transcode", td.path])
+                run_twotone("transcode", [td.path], ["-r"])
             except:
                 self.assertTrue(False)
 
