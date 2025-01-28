@@ -1,6 +1,7 @@
 
 import cchardet
 import json
+import langid
 import logging
 import math
 import os.path
@@ -155,6 +156,29 @@ def fps_str_to_float(fps: str) -> float:
     return eval(fps)
 
 
+def guess_language(path: str, encoding: str) -> str:
+    result = ""
+
+    with open(path, "r", encoding=encoding) as sf:
+        content = sf.readlines()
+        content_joined = "".join(content)
+        result = langid.classify(content_joined)[0]
+
+    return result
+
+
+def build_subtitle_from_path(path: str, language: str | None = "") -> SubtitleFile:
+    """
+        if language == None - use autodetection.
+                       Empty string - no language
+                       2/3 letter language code - use that language
+    """
+    encoding = file_encoding(path)
+    language = guess_language(path, encoding) if language is None else language
+
+    return SubtitleFile(path, language, encoding)
+
+
 def alter_subrip_subtitles_times(content: str, multiplier: float) -> str:
     def multiply_time(match):
         time_from, time_to = map(time_to_ms, match.groups())
@@ -283,7 +307,7 @@ def split_path(path: str) -> (str, str, str):
     return str(info.parent), info.stem, info.suffix[1:]
 
 
-def generate_mkv(input_video: str, output_path: str, subtitles: [SubtitleFile]):
+def generate_mkv(output_path: str, input_video: str, subtitles: [SubtitleFile]):
     # output
     options = ["-o", output_path]
 
